@@ -1,1 +1,3 @@
-shapes
+build
+dist
+*.egg-info
