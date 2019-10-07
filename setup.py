@@ -3,7 +3,7 @@
 import setuptools
 
 setuptools.setup (name = 'opendrift_landmask_data',
-       version = '0.1rc2',
+       version = '0.1rc3',
        description = 'Joined landmasks for GSHHS features used by cartopy',
        author = 'Gaute Hope',
        author_email = 'gaute.hope@met.no',
