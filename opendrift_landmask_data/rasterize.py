@@ -9,8 +9,8 @@ from mask import GSHHSMask
 
 def gshhs_rasterize(inwkb, outtif):
     dnm = GSHHSMask.dnm
-    nx = int(np.ceil(2*180/dnm))
-    ny = int(np.ceil(2*90/dnm))
+    nx = GSHHSMask.nx
+    ny = GSHHSMask.nx
     x = [-180, 180]
     y = [-90, 90]
 
@@ -46,8 +46,8 @@ def gshhs_rasterize(inwkb, outtif):
 
 def mask_rasterize(inwkb, outnp):
     dnm = GSHHSMask.dnm
-    nx = int(np.ceil(2*180/dnm))
-    ny = int(np.ceil(2*90/dnm))
+    nx = GSHHSMask.nx
+    ny = GSHHSMask.nx
     x = [-180, 180]
     y = [-90, 90]
 
@@ -75,7 +75,7 @@ def mask_rasterize(inwkb, outnp):
 
 if __name__ == '__main__':
     print ("resolution, m =", GSHHSMask.dm)
-    img = mask_rasterize(GSHHS['f'], 'mask_%.2f_nm' % GSHHSMask.dnm)
+    img = mask_rasterize(GSHHS['c'], 'mask_%.2f_nm' % GSHHSMask.dnm)
     # gshhs_rasterize (GSHHS['f'], 'mask.tif')
 
     import cartopy.crs as ccrs
