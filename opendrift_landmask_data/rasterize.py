@@ -56,6 +56,7 @@ def mask_rasterize(inwkb, outnp):
     resx = (x[1] - x[0]) / nx
     resy = (y[1] - y[0]) / ny
     transform = Affine.translation(x[0] - resx/2, y[0]-resy/2) * Affine.scale (resx, resy)
+    # transform = rasterio.transform.IDENTITY
     print ("transform = ", transform)
 
     with open(inwkb, 'rb') as fd:
@@ -87,9 +88,12 @@ if __name__ == '__main__':
     ax = plt.axes(projection=ccrs.PlateCarree())
     # img = plt.imread('mask.tif')
     extent = [-180, 180, -90, 90]
-    ax.imshow (img, extent = extent, transform = ccrs.PlateCarree())
-    ax.coastlines()
-    ax.set_global()
+    # ax.imshow (img, extent = extent, transform = ccrs.PlateCarree())
+    lons = np.linspace(-180, 180, img.shape[0])
+    lats = np.linspace(-90, 90, img.shape[1])
+    ax.contourf(lons, lats, img, transform=ccrs.PlateCarree())
+    # ax.coastlines()
+    # ax.set_global()
     plt.title("Landmask of the world based on GSHHS coastlines")
 
     plt.show()

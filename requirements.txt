@@ -5,4 +5,5 @@ wheel
 twine
 rasterio
 shapely[vectorized]
+pyepsg
 
