@@ -1,19 +1,14 @@
 import numpy as np
 import rasterio
-from rasterio.features import rasterize
+from rasterio.features import rasterize, geometry_mask
 from rasterio import Affine
 import shapely.wkb as wkb
 
 from gshhs import GSHHS
-
-class GSHHSMask:
-    extent = [-180, 180, -90, 90]
-    epsg   = '32662' # Plate Carree
+from mask import GSHHSMask
 
 def gshhs_rasterize(inwkb, outtif):
-    # minimum resolution:
-    # 0.269978 nm = .5 km, 1 deg = 60 nm at equator
-    dnm = 0.269978
+    dnm = GSHHSMask.dnm
     nx = int(np.ceil(2*180/dnm))
     ny = int(np.ceil(2*90/dnm))
     x = [-180, 180]
@@ -31,14 +26,13 @@ def gshhs_rasterize(inwkb, outtif):
                     height = ny,
                     width  = nx,
                     count  = 1,
-                    dtype  = 'uint8',
+                    dtype  = rasterio.dtypes.bool_,
                     crs = 'epsg:32662', # Plate Carree
                     transform = transform) as out:
 
         with open(inwkb, 'rb') as fd:
             land = wkb.load(fd)
 
-            # check out features.geometry_mask -> np.bool
             imgs = rasterize (
                     ((l, 255) for l in land),
                     out_shape = out.shape,
@@ -50,8 +44,39 @@ def gshhs_rasterize(inwkb, outtif):
             out.write (imgs, indexes = 1)
 
 
+def mask_rasterize(inwkb, outnp):
+    dnm = GSHHSMask.dnm
+    nx = int(np.ceil(2*180/dnm))
+    ny = int(np.ceil(2*90/dnm))
+    x = [-180, 180]
+    y = [-90, 90]
+
+    print ('nx =', nx, 'ny =', ny)
+
+    resx = (x[1] - x[0]) / nx
+    resy = (y[1] - y[0]) / ny
+    transform = Affine.translation(x[0] - resx/2, y[0]-resy/2) * Affine.scale (resx, resy)
+    print ("transform = ", transform)
+
+    with open(inwkb, 'rb') as fd:
+        land = wkb.load(fd)
+
+        # check out features.geometry_mask -> np.bool
+        img = geometry_mask (
+                land,
+                invert = True,
+                out_shape = (ny, nx),
+                all_touched = True,
+                transform = transform)
+
+    np.save (outnp, img, allow_pickle=False)
+    return img
+
+
 if __name__ == '__main__':
-    gshhs_rasterize (GSHHS['h'], 'mask.tif')
+    print ("resolution, m =", GSHHSMask.dm)
+    img = mask_rasterize(GSHHS['f'], 'mask_%.2f_nm' % GSHHSMask.dnm)
+    # gshhs_rasterize (GSHHS['f'], 'mask.tif')
 
     import cartopy.crs as ccrs
     import matplotlib.pyplot as plt
@@ -60,7 +85,7 @@ if __name__ == '__main__':
 
     plt.figure ()
     ax = plt.axes(projection=ccrs.PlateCarree())
-    img = plt.imread('mask.tif')
+    # img = plt.imread('mask.tif')
     extent = [-180, 180, -90, 90]
     ax.imshow (img, extent = extent, transform = ccrs.PlateCarree())
     ax.coastlines()
