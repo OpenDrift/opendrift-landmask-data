@@ -43,8 +43,12 @@ setuptools.setup (name = 'opendrift_landmask_data',
        url = 'http://github.com/OpenDrift/opendrift-landmask-data',
        packages = setuptools.find_packages(exclude = ['*.compressed']),
        package_data = { '': [ 'shapes/*.wkb', 'masks/*.tif' ] },
-       setup_requires = ['setuptools_scm'],
        include_package_data = False,
+       setup_requires = [ 'setuptools_scm',
+                          'rasterio >= 1.0',
+                          'shapely[vectorized]',
+                          'numpy'
+                        ],
        cmdclass = { 'build_py': BuildPyCommand }
        )
 
