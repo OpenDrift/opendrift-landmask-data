@@ -46,6 +46,17 @@ def test_landmask_many(benchmark):
   print ("points:", len(xx.ravel()))
   benchmark(l.contains, xx.ravel(), yy.ravel())
 
+def test_landmask_many_extent(benchmark):
+  l = Landmask([50, 0, 65, 40])
+
+  x = np.linspace(50.1, 64.9, 30000)
+  y = np.linspace(0.1, 39.9, 10)
+
+  xx, yy = np.meshgrid(x,y)
+
+  print ("points:", len(xx.ravel()))
+  benchmark(l.contains, xx.ravel(), yy.ravel())
+
 def test_norway(tmpdir):
   l = Landmask()
 
