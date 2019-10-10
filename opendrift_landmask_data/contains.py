@@ -1,7 +1,7 @@
 import numpy as np
 import shapely.vectorized
 import shapely.wkb as wkb
-import pyproj
+import rasterio
 
 from .mask import GSHHSMask
 from .gshhs import GSHHS
@@ -11,7 +11,12 @@ class Landmask:
   mask = None
 
   def __init__(self):
-    self.mask = np.load(GSHHSMask.maskf, mmap_mode = 'r')
+    """
+    Initialize landmask from generated GeoTIFF
+    """
+    # self.mask = np.load(GSHHSMask.masknpy, mmap_mode = 'r')
+    with rasterio.open(GSHHSMask.masktif, 'r') as src:
+      self.mask = src.read(1)
 
     with open (GSHHS['f'], 'rb') as fd:
       self.land = shapely.prepared.prep(wkb.load(fd))
@@ -39,11 +44,10 @@ class Landmask:
     ym = (y - (-90)) / (90*2) * (GSHHSMask.ny - 1)
 
     # print ("checking:", x, y, " -> ", xm, ym)
-    land = self.mask[ym.astype(np.int32), xm.astype(np.int32)]
+    land = self.mask[ym.astype(np.int32), xm.astype(np.int32)] == 1
 
     # checking against polygons
     land[land] = shapely.vectorized.contains(self.land, x[land], y[land])
 
     return land
-
 

@@ -9,23 +9,40 @@ class BuildPyCommand(BuildPy):
     if not os.path.exists('opendrift_landmask_data/shapes/gshhs_f_-180.000000E-90.000000N180.000000E90.000000N.wkb'):
       import bz2
       import shutil
+
       print ("decompressing 'full' resolution coastline..")
+
       with bz2.open('opendrift_landmask_data/shapes/compressed/gshhs_f_-180.000000E-90.000000N180.000000E90.000000N.wkb.bz2', 'r') as cf:
+
         with open('opendrift_landmask_data/shapes/gshhs_f_-180.000000E-90.000000N180.000000E90.000000N.wkb', 'wb') as uf:
           shutil.copyfileobj(cf, uf)
 
+  def generate_mask(self):
+    from opendrift_landmask_data.mask import GSHHSMask
+
+    if not os.path.exists(GSHHSMask.masktif):
+      if not os.path.exists (os.path.dirname(GSHHSMask.masktif)):
+        os.makedirs (os.path.dirname(GSHHSMask.masktif))
+      from opendrift_landmask_data.rasterize import gshhs_rasterize
+      from opendrift_landmask_data.gshhs import GSHHS
+
+      print ("generating tif raster at %.2f m resolution (this might take a couple of minutes).." % GSHHSMask.dm)
+
+      gshhs_rasterize(GSHHS['f'], 'opendrift_landmask_data/masks/mask_%.2f_nm.tif' % GSHHSMask.dnm)
+
   def run(self):
     self.unpack()
+    self.generate_mask()
     setuptools.command.build_py.build_py.run(self)
 
 setuptools.setup (name = 'opendrift_landmask_data',
-       version = '0.1rc4',
+       version = '0.1rc5',
        description = 'Joined landmasks for GSHHS features used by cartopy',
        author = 'Gaute Hope',
        author_email = 'gaute.hope@met.no',
        url = 'http://github.com/OpenDrift/opendrift-landmask-data',
        packages = setuptools.find_packages(exclude = ['*.compressed']),
-       package_data = { '': [ 'shapes/*.wkb' ] },
+       package_data = { '': [ 'shapes/*.wkb', 'masks/*.tif' ] },
        setup_requires = ['setuptools_scm'],
        include_package_data = False,
        cmdclass = { 'build_py': BuildPyCommand }

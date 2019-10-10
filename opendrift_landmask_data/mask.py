@@ -16,7 +16,8 @@ class GSHHSMask:
   ny     = int(math.ceil(2*90*60/dnm))
   dx     = (extent[1] - extent[0])/nx
   dy     = (extent[3] - extent[2])/ny
-  maskf  = os.path.join (mask, 'mask_%.2f_nm.npy' % dnm)
+  masknpy = os.path.join (mask, 'mask_%.2f_nm.npy' % dnm)
+  masktif = os.path.join (mask, 'mask_%.2f_nm.tif' % dnm)
 
   def grid(self):
     import numpy as np
