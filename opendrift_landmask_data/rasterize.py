@@ -4,8 +4,12 @@ from rasterio.features import rasterize, geometry_mask
 from rasterio import Affine
 import shapely.wkb as wkb
 
-from .gshhs import GSHHS
-from .mask import GSHHSMask
+if __name__ == '__main__':
+    from gshhs import GSHHS
+    from mask import GSHHSMask
+else:
+    from .gshhs import GSHHS
+    from .mask import GSHHSMask
 
 def gshhs_rasterize(inwkb, outtif):
     dnm = GSHHSMask.dnm
@@ -41,7 +45,7 @@ def gshhs_rasterize(inwkb, outtif):
             img = rasterize (
                     ((l, 0b1) for l in land),
                     out_shape = out.shape,
-                    fill = 0b0,
+                    fill = 0b1,
                     all_touched = True,
                     transform = transform)
 
