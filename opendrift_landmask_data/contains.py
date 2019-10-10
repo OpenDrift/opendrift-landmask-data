@@ -1,9 +1,11 @@
 import numpy as np
+import shapely
 import shapely.vectorized
 import shapely.wkb as wkb
 import shapely.strtree
-from shapely.geometry import box, MultiPolygon
+from shapely.geometry import box, MultiPolygon, Polygon
 import rasterio
+import cartopy
 
 from .mask import GSHHSMask
 from .gshhs import GSHHS
@@ -27,17 +29,19 @@ class Landmask:
     with rasterio.open(GSHHSMask.masktif, 'r') as src:
       self.mask = src.read(1)
 
-    with open (GSHHS['f'], 'rb') as fd:
-      self.land = wkb.load(fd)
+    # tree = shapely.strtree.STRtree(self.land.geoms)
+    # self.extent = box(*extent)
+    # lands = MultiPolygon(tree.query(self.extent))
+    self.extent = shapely.prepared.prep(box(*self.extent))
+    # self.land = shapely.prepared.prep(lands)
 
-      if extent is not None:
-        tree = shapely.strtree.STRtree(self.land.geoms)
-        self.extent = box(*extent)
-        lands = MultiPolygon(tree.query(self.extent))
-        self.extent = shapely.prepared.prep(self.extent)
-        self.land = shapely.prepared.prep(lands)
-      else:
-        self.land = shapely.prepared.prep(self.land)
+    reader = cartopy.feature.GSHHSFeature(scale = 'f', level = 1)
+
+    print ("preparing polygons..")
+    self.land = [ Polygon(p.exterior)
+                  for p in reader.intersecting_geometries(extent) ]
+    self.land = shapely.prepared.prep(MultiPolygon(self.land))
+    print ("done.")
 
   def contains(self, x, y):
     """
@@ -68,6 +72,7 @@ class Landmask:
     if self.extent is not None:
       assert np.all(shapely.vectorized.contains(self.extent, x[land], y[land])), "Points are not inside extent."
 
+    # for p in self.land:
     land[land] = shapely.vectorized.contains(self.land, x[land], y[land])
 
     return land

@@ -47,7 +47,7 @@ def test_landmask_many(benchmark):
   benchmark(l.contains, xx.ravel(), yy.ravel())
 
 def test_landmask_many_extent(benchmark):
-  l = Landmask([50, 0, 65, 40])
+  l = Landmask([50, 0, 52, 10])
 
   x = np.linspace(50.1, 64.9, 30000)
   y = np.linspace(0.1, 39.9, 10)
