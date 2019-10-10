@@ -33,10 +33,10 @@ class Landmask:
       array of bools same length as x and y
     """
     if not isinstance(x, np.ndarray):
-      x = np.array(x)
+      x = np.array(x, ndmin = 1)
 
     if not isinstance(y, np.ndarray):
-      y = np.array(y)
+      y = np.array(y, ndmin = 1)
 
     assert len(x) == len(y)
 

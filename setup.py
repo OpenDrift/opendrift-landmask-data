@@ -49,6 +49,11 @@ setuptools.setup (name = 'opendrift_landmask_data',
                           'shapely[vectorized]',
                           'numpy'
                         ],
+       extra_require = {
+         'contains': [ 'rasterio >= 1.0',
+                       'shapely[vectorized]',
+                       'numpy' ]
+                       },
        cmdclass = { 'build_py': BuildPyCommand }
        )
 
