@@ -66,7 +66,7 @@ class Landmask:
 
     # checking against polygons
     if self.extent is not None:
-      assert np.all(shapely.vectorized.contains(self.extent, x[land], y[land]))
+      assert np.all(shapely.vectorized.contains(self.extent, x[land], y[land])), "Points are not inside extent."
 
     land[land] = shapely.vectorized.contains(self.land, x[land], y[land])
 
