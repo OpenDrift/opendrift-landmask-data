@@ -56,7 +56,10 @@ class Landmask:
     print ("preparing polygons..:", extent)
     if extent is not None:
       ex = box(*extent)
+      print ("polys before:", len(self.land.geoms))
+
       self.land = MultiPolygon([l for l in self.land.geoms if ex.intersects(l)])
+      print ("polys after:", len(self.land.geoms))
     self.land = shapely.prepared.prep(self.land)
 
     # warmup
@@ -90,8 +93,8 @@ class Landmask:
 
     assert len(x) == len(y)
 
-    xm = (x - (-180)) / (180*2) * (GSHHSMask.nx - 1)
-    ym = (y - (-90)) / (90*2) * (GSHHSMask.ny - 1)
+    xm = (x - (-180)) / (180*2) * GSHHSMask.nx - GSHHSMask.dx
+    ym = (y - (-90)) / (90*2)   * GSHHSMask.ny - GSHHSMask.dy
 
     # print (GSHHSMask.nx, GSHHSMask.ny, self.mask.shape)
 
@@ -103,10 +106,10 @@ class Landmask:
     # if self.extent is not None:
     #   assert np.all(shapely.vectorized.contains(self.extent, x[land], y[land])), "Points are not inside extent."
 
-    # print ("checking against polys:", len(x))
+    print ("checking against polys:", len(x))
     if len(x) > 0:
       land[land] = self.poly_check(x[land], y[land])
-    # print ("checked against poly.")
+    print ("checked against poly.")
 
     return land
 
