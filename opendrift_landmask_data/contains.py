@@ -7,6 +7,7 @@ from shapely.ops import unary_union
 from shapely.geometry import box, MultiPolygon, Polygon
 import rasterio
 import cartopy
+import mmap
 
 from .mask import GSHHSMask
 from .gshhs import GSHHS
@@ -15,6 +16,8 @@ class Landmask:
   land = None
   mask = None
   extent = None
+  xm0 = 0
+  ym0 = 0
 
   def __init__(self, extent = None):
     """
@@ -25,61 +28,73 @@ class Landmask:
       extent (array): [xmin, ymin, xmax, ymax]
     """
     self.extent = extent
+    self.mask = np.memmap(GSHHSMask.maskmm, dtype = 'bool', mode = 'r', shape = (GSHHSMask.ny, GSHHSMask.nx))
 
-    # self.mask = np.load(GSHHSMask.masknpy, mmap_mode = 'r')
-    with rasterio.open(GSHHSMask.masktif, 'r') as src:
-      self.mask = src.read(1)
-      print (self.mask.shape)
-      print (self.mask)
-
-    # tree = shapely.strtree.STRtree(self.land.geoms)
-    # self.extent = box(*extent)
-    # lands = MultiPolygon(tree.query(self.extent))
-    # self.extent = shapely.prepared.prep(box(*self.extent))
-    # self.land = shapely.prepared.prep(lands)
-
-    ### CARTOPY
-    #reader = cartopy.feature.GSHHSFeature(scale = 'i', level = 1)
-    #print ("preparing polygons..:", extent)
-    ##cartopy uses interleved extent
-    #extentint = [extent[0], extent[2], extent[1], extent[3]] if extent else None
-    #self.land = [shapely.prepared.prep(shp)
-    #             for shp in reader.intersecting_geometries(extentint)]
-    #print ("cartopy polys:", len(self.land))
-    #print ("done.")
-    ######
-
-    print ("loading prepared polygons..")
     with open(GSHHS['f'], 'rb') as fd:
       self.land = wkb.load(fd)
-    print ("preparing polygons..:", extent)
-    if extent is not None:
-      ex = box(*extent)
-      print ("polys before:", len(self.land.geoms))
 
-      self.land = MultiPolygon([l for l in self.land.geoms if ex.intersects(l)])
-      print ("polys after:", len(self.land.geoms))
+    if extent is not None:
+      self.extent = box(*extent)
+      rep_point = self.extent.representative_point()
+      self.extent = shapely.prepared.prep(self.extent)
+
+      # mask
+      x0 = extent[0]; y0 = extent[1]
+      x1 = extent[2]; y1 = extent[3]
+
+      xm1, ym1 = self.xy2mask(x1, y1)
+      self.xm0, self.ym0 = self.xy2mask(x0, y0)
+      print (extent)
+      print (self.xm0, xm1)
+      print (self.ym0, ym1)
+      print (self.mask.shape)
+      self.mask = self.mask[self.ym0[0]:ym1[0]+1, self.xm0[0]:xm1[0]+1]
+      print (self.mask.shape)
+
+      # polygons
+      self.land = MultiPolygon([l for l in self.land.geoms if self.extent.intersects(l)])
+
+    else:
+      self.extent = GSHHSMask.extent
+      rep_point = self.extent.representative_point()
+      self.extent = shapely.prepared.prep(self.extent)
+      self.xm0, self.ym0, self.xm1, self.ym1 = tuple(*extent)
+
     self.land = shapely.prepared.prep(self.land)
 
     # warmup
-    self.contains([15], [65])
+    self.contains(rep_point.x, rep_point.y)
 
-  # def prepare_polygon(self, p):
-  #   if isinstance(p, MultiPolygon):
-  #     return shapely.prepared.prep(
-  #               MultiPolygon((Polygon(pp.exterior) for pp in p.geoms))
-  #            )
-  #   elif isinstance(p, Polygon):
-  #     return shapely.prepared.prep(p.exterior)
+  def xy2mask(self, x, y):
+    """ Mask indices for coordinates """
+    if not isinstance(x, np.ndarray):
+      x = np.array(x, ndmin = 1)
 
-  # @jit(nopython=True)
-  def contains(self, x, y):
+    if not isinstance(y, np.ndarray):
+      y = np.array(y, ndmin = 1)
+
+    assert len(x) == len(y)
+
+    # wraps around
+    xm = ((x - (-180)) / (180*2) * GSHHSMask.nx - 1 - self.xm0).astype(np.int32)
+
+    # is reversed
+    ym = np.abs((y - (-90)) / (90*2) * GSHHSMask.ny - 1 - self.ym0).astype(np.int32)
+
+    return (xm, ym)
+
+  def contains(self, x, y, skippoly = False, checkextent = True):
     """
     Check if coordinates x, y are on land
 
     Args:
       x (float, deg): longitude
+
       y (float, deg): latitude
+
+      skippoly (bool): skip check against polygons
+
+      checkextent (bool): check if points are within extent of landmask
 
     Returns:
       array of bools same length as x and y
@@ -90,39 +105,18 @@ class Landmask:
     if not isinstance(y, np.ndarray):
       y = np.array(y, ndmin = 1)
 
-    assert len(x) == len(y)
+    if checkextent and self.extent is not None:
+      assert np.all(shapely.vectorized.contains(self.extent, x, y)), "Points are not inside extent."
 
-    xm = (x - (-180)) / (180*2) * GSHHSMask.nx - GSHHSMask.dx
-    ym = (y - (-90)) / (90*2)   * GSHHSMask.ny - GSHHSMask.dy
-
-    # print (GSHHSMask.nx, GSHHSMask.ny, self.mask.shape)
-
-    # print ("checking:", len(x), ":", x, y, " -> ", xm, ym)
-    land = self.mask[ym.astype(np.int32), xm.astype(np.int32)] == 1
-    # print ("land:", land.astype(np.uint8))
+    xm, ym = self.xy2mask(x, y)
+    land = self.mask[ym, xm]
 
     # checking against polygons
-    # if self.extent is not None:
-    #   assert np.all(shapely.vectorized.contains(self.extent, x[land], y[land])), "Points are not inside extent."
-
-    print ("checking against polys:", len(x))
-    if len(x) > 0:
-      land[land] = self.poly_check(x[land], y[land])
-    print ("checked against poly.")
+    # print ("checking against polys:", len(x[land]))
+    if not skippoly and len(x[land]) > 0:
+      land[land] = shapely.vectorized.contains(self.land, x[land], y[land])
+    # print ("checked against poly.")
 
     return land
-
-  def poly_check(self, x, y):
-    land = shapely.vectorized.contains(self.land, x, y)
-    # land = np.zeros(len(x), dtype = np.bool)
-
-    # for shp in self.land:
-    #   if np.all(land): break
-
-    #   land = np.logical_or(land, shapely.vectorized.contains(shp, x, y))
-
-    return land
-
-
 
 
