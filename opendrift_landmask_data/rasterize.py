@@ -14,7 +14,7 @@ else:
 def gshhs_rasterize(inwkb, outtif):
     dnm = GSHHSMask.dnm
     nx = GSHHSMask.nx
-    ny = GSHHSMask.nx
+    ny = GSHHSMask.ny
     x = [-180, 180]
     y = [-90, 90]
 
@@ -43,9 +43,9 @@ def gshhs_rasterize(inwkb, outtif):
 
 
             img = rasterize (
-                    ((l, 0b1) for l in land),
+                    ((l, 255) for l in land),
                     out_shape = out.shape,
-                    fill = 0b1,
+                    # fill = 255,
                     all_touched = True,
                     transform = transform)
 
@@ -98,13 +98,14 @@ if __name__ == '__main__':
     # plt.figure ()
     # ax = plt.axes(projection=ccrs.PlateCarree())
     # img = plt.imread('masks/mask_%.2f_nm.tif' % GSHHSMask.dnm)
-    # extent = [-180, 180, -90, 90]
-    # ax.imshow (img, extent = extent, transform = ccrs.PlateCarree())
-    # lons = np.linspace(-180, 180, img.shape[0])
-    # lats = np.linspace(-90, 90, img.shape[1])
-    # # ax.contourf(lons, lats, img, transform=ccrs.PlateCarree())
-    # # ax.coastlines()
-    # # ax.set_global()
+    # print (img.shape)
+    # # extent = [-180, 180, -90, 90]
+    # # ax.imshow (img, extent = extent, transform = ccrs.PlateCarree())
+    # lons = np.linspace(-180, 180, img.shape[1])
+    # lats = np.linspace(-90, 90, img.shape[0])
+    # ax.contourf(lons, lats, img, transform=ccrs.PlateCarree())
+    # ax.coastlines()
+    # ax.set_global()
     # plt.title("Landmask of the world based on GSHHS coastlines")
 
     # plt.show()

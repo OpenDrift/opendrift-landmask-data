@@ -58,21 +58,25 @@ def test_landmask_many_extent(benchmark):
   benchmark(l.contains, xx.ravel(), yy.ravel())
 
 def test_norway(tmpdir):
-  l = Landmask()
+  l = Landmask(extent=[0, 45, 40, 67])
 
-  lon = np.arange (0, 40, .5)
-  lat = np.arange (45, 67, .5)
+  lon = np.arange (0, 40, .1)
+  lat = np.arange (45, 67, .1)
 
   xx, yy = np.meshgrid(lon, lat)
   c = l.contains(xx.ravel(), yy.ravel())
   c = c.reshape(xx.shape)
+
+  print ("c:", c)
 
   import cartopy.crs as ccrs
   import matplotlib.pyplot as plt
   import os
   plt.figure(dpi=200)
   ax = plt.axes(projection = ccrs.PlateCarree())
-  ax.contourf(lon, lat, c, transform = ccrs.PlateCarree())
+  # ax.contourf(lon, lat, c, transform = ccrs.PlateCarree())
+  ax.imshow(c, extent = [ 0, 40, 45, 67], transform=ccrs.PlateCarree())
   ax.coastlines()
   ax.set_global()
-  plt.savefig(os.path.join(tmpdir, 'norway.png'))
+  # plt.savefig(os.path.join(tmpdir, 'norway.png'))
+  plt.show()

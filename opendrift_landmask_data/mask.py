@@ -11,6 +11,7 @@ class GSHHSMask:
   ## 0.269978 nm = .5 km, 1 deg <= 60 nm (at equator)
   # dnm    = 0.269978 # nm
   dnm    = .26
+  # dnm    = 30.
   dm     = dnm * 1852.
   nx     = int(math.ceil(2*180*60/dnm))
   ny     = int(math.ceil(2*90*60/dnm))
