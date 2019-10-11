@@ -3,6 +3,7 @@ import shapely
 import shapely.vectorized
 import shapely.wkb as wkb
 import shapely.strtree
+from shapely.ops import unary_union
 from shapely.geometry import box, MultiPolygon, Polygon
 import rasterio
 import cartopy
@@ -38,16 +39,28 @@ class Landmask:
     # self.extent = shapely.prepared.prep(box(*self.extent))
     # self.land = shapely.prepared.prep(lands)
 
-    reader = cartopy.feature.GSHHSFeature(scale = 'i', level = 1)
+    ### CARTOPY
+    #reader = cartopy.feature.GSHHSFeature(scale = 'i', level = 1)
+    #print ("preparing polygons..:", extent)
+    ##cartopy uses interleved extent
+    #extentint = [extent[0], extent[2], extent[1], extent[3]] if extent else None
+    #self.land = [shapely.prepared.prep(shp)
+    #             for shp in reader.intersecting_geometries(extentint)]
+    #print ("cartopy polys:", len(self.land))
+    #print ("done.")
+    ######
 
+    print ("loading prepared polygons..")
+    with open(GSHHS['f'], 'rb') as fd:
+      self.land = wkb.load(fd)
     print ("preparing polygons..:", extent)
-    #cartopy uses interleved extent
-    extentint = [extent[0], extent[2], extent[1], extent[3]] if extent else None
-    self.land = [shapely.prepared.prep(shp)
-                 for shp in reader.intersecting_geometries(extentint)]
-    print ("cartopy polys:", len(self.land))
-    # self.land = shapely.prepared.prep(self.land)
-    print ("done.")
+    if extent is not None:
+      ex = box(*extent)
+      self.land = MultiPolygon([l for l in self.land.geoms if ex.intersects(l)])
+    self.land = shapely.prepared.prep(self.land)
+
+    # warmup
+    self.contains([15], [65])
 
   # def prepare_polygon(self, p):
   #   if isinstance(p, MultiPolygon):
@@ -90,19 +103,21 @@ class Landmask:
     # if self.extent is not None:
     #   assert np.all(shapely.vectorized.contains(self.extent, x[land], y[land])), "Points are not inside extent."
 
-    land[land] = self.poly_check(x[land], y[land])
-    print ("checked against poly.")
+    # print ("checking against polys:", len(x))
+    if len(x) > 0:
+      land[land] = self.poly_check(x[land], y[land])
+    # print ("checked against poly.")
 
     return land
 
   def poly_check(self, x, y):
-    land = np.zeros(len(x), dtype = np.bool)
-    print ("checking against polys:", len(land))
+    land = shapely.vectorized.contains(self.land, x, y)
+    # land = np.zeros(len(x), dtype = np.bool)
 
-    for shp in self.land:
-      if np.all(land): break
+    # for shp in self.land:
+    #   if np.all(land): break
 
-      land = np.logical_or(land, shapely.vectorized.contains(shp, x, y))
+    #   land = np.logical_or(land, shapely.vectorized.contains(shp, x, y))
 
     return land
 
