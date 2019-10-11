@@ -7,7 +7,6 @@ from shapely.ops import unary_union
 from shapely.geometry import box, MultiPolygon, Polygon
 import rasterio
 import cartopy
-from numba import jit
 
 from .mask import GSHHSMask
 from .gshhs import GSHHS

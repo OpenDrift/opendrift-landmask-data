@@ -80,5 +80,5 @@ def test_norway(tmpdir):
   ax.imshow(c, extent = [ 0, 40, 45, 67], transform=ccrs.PlateCarree())
   ax.coastlines()
   ax.set_global()
-  # plt.savefig(os.path.join(tmpdir, 'norway.png'))
-  plt.show()
+  plt.savefig(os.path.join(tmpdir, 'norway.png'))
+  # plt.show()
