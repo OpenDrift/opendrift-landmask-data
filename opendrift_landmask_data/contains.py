@@ -80,9 +80,9 @@ class Landmask:
     xm = (x - (-180)) / (180*2) * (GSHHSMask.nx - 1)
     ym = (y - (-90)) / (90*2) * (GSHHSMask.ny - 1)
 
-    print (GSHHSMask.nx, GSHHSMask.ny, self.mask.shape)
+    # print (GSHHSMask.nx, GSHHSMask.ny, self.mask.shape)
 
-    print ("checking:", len(x), ":", x, y, " -> ", xm, ym)
+    # print ("checking:", len(x), ":", x, y, " -> ", xm, ym)
     land = self.mask[ym.astype(np.int32), xm.astype(np.int32)] == 1
     # print ("land:", land.astype(np.uint8))
 
@@ -90,10 +90,22 @@ class Landmask:
     # if self.extent is not None:
     #   assert np.all(shapely.vectorized.contains(self.extent, x[land], y[land])), "Points are not inside extent."
 
-    print ("checking against polys:", len(land[land]))
-
-    for shp in self.land:
-      land[land] = np.logical_or(land[land], shapely.vectorized.contains(shp, x[land], y[land]))
+    land[land] = self.poly_check(x[land], y[land])
+    print ("checked against poly.")
 
     return land
+
+  def poly_check(self, x, y):
+    land = np.zeros(len(x), dtype = np.bool)
+    print ("checking against polys:", len(land))
+
+    for shp in self.land:
+      if np.all(land): break
+
+      land = np.logical_or(land, shapely.vectorized.contains(shp, x, y))
+
+    return land
+
+
+
 

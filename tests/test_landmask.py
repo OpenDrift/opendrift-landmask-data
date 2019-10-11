@@ -27,13 +27,15 @@ def test_landmask_onland(benchmark):
   l = Landmask()
 
   onland = (np.array([15.]), np.array([65.6]))
-  benchmark(l.contains, onland[0], onland[1])
+  c = benchmark(l.contains, onland[0], onland[1])
+  assert c
 
 def test_landmask_onocean(benchmark):
   l = Landmask()
 
   onocean = (np.array([5.]), np.array([65.6]))
-  benchmark(l.contains, onocean[0], onocean[1])
+  c = benchmark(l.contains, onocean[0], onocean[1])
+  assert not c
 
 def test_landmask_many(benchmark):
   l = Landmask()
