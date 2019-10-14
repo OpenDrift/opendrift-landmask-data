@@ -16,8 +16,6 @@ class Landmask:
   land = None
   mask = None
   extent = None
-  xm0 = 0
-  ym0 = 0
 
   def __init__(self, extent = None):
     """
@@ -29,59 +27,29 @@ class Landmask:
     """
     self.extent = extent
     self.mask = np.memmap(GSHHSMask.maskmm, dtype = 'bool', mode = 'r', shape = (GSHHSMask.ny, GSHHSMask.nx))
+    self.transform = GSHHSMask().transform().__invert__()
+
+    # with rasterio.open(GSHHSMask.masktif, 'r') as src:
+    #   self.mask = src.read(1)
 
     with open(GSHHS['f'], 'rb') as fd:
       self.land = wkb.load(fd)
 
-    if extent is not None:
+    if extent:
       self.extent = box(*extent)
       rep_point = self.extent.representative_point()
       self.extent = shapely.prepared.prep(self.extent)
 
-      # mask
-      x0 = extent[0]; y0 = extent[1]
-      x1 = extent[2]; y1 = extent[3]
-
-      xm1, ym1 = self.xy2mask(x1, y1)
-      self.xm0, self.ym0 = self.xy2mask(x0, y0)
-      print (extent)
-      print (self.xm0, xm1)
-      print (self.ym0, ym1)
-      print (self.mask.shape)
-      self.mask = self.mask[self.ym0[0]:ym1[0]+1, self.xm0[0]:xm1[0]+1]
-      print (self.mask.shape)
-
       # polygons
       self.land = MultiPolygon([l for l in self.land.geoms if self.extent.intersects(l)])
-
-    else:
-      self.extent = GSHHSMask.extent
-      rep_point = self.extent.representative_point()
-      self.extent = shapely.prepared.prep(self.extent)
-      self.xm0, self.ym0, self.xm1, self.ym1 = tuple(*extent)
 
     self.land = shapely.prepared.prep(self.land)
 
     # warmup
-    self.contains(rep_point.x, rep_point.y)
-
-  def xy2mask(self, x, y):
-    """ Mask indices for coordinates """
-    if not isinstance(x, np.ndarray):
-      x = np.array(x, ndmin = 1)
-
-    if not isinstance(y, np.ndarray):
-      y = np.array(y, ndmin = 1)
-
-    assert len(x) == len(y)
-
-    # wraps around
-    xm = ((x - (-180)) / (180*2) * GSHHSMask.nx - 1 - self.xm0).astype(np.int32)
-
-    # is reversed
-    ym = np.abs((y - (-90)) / (90*2) * GSHHSMask.ny - 1 - self.ym0).astype(np.int32)
-
-    return (xm, ym)
+    if extent:
+      self.contains(rep_point.x, rep_point.y)
+    else:
+      self.contains(0, 0)
 
   def contains(self, x, y, skippoly = False, checkextent = True):
     """
@@ -105,16 +73,19 @@ class Landmask:
     if not isinstance(y, np.ndarray):
       y = np.array(y, ndmin = 1)
 
-    if checkextent and self.extent is not None:
-      assert np.all(shapely.vectorized.contains(self.extent, x, y)), "Points are not inside extent."
+    xm, ym = self.transform * (x, y)
 
-    xm, ym = self.xy2mask(x, y)
-    land = self.mask[ym, xm]
+    land = self.mask[ym.astype(np.int32), xm.astype(np.int32)]
 
     # checking against polygons
     # print ("checking against polys:", len(x[land]))
     if not skippoly and len(x[land]) > 0:
+
+      if checkextent and self.extent is not None:
+        assert np.all(shapely.vectorized.contains(self.extent, x[land], y[land])), "Points are not inside extent."
+
       land[land] = shapely.vectorized.contains(self.land, x[land], y[land])
+
     # print ("checked against poly.")
 
     return land

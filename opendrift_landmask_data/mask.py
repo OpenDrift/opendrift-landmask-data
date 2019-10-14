@@ -10,11 +10,14 @@ class GSHHSMask:
   ## minimum resolution:
   ## 0.269978 nm = .5 km, 1 deg <= 60 nm (at equator)
   # dnm    = 0.269978 # nm
-  dnm    = .26
+  # dnm    = .26
   # dnm    = 30.
+  nx = 2*180*60*4
+  ny = 2*90*60*4
+  dnm = 1/4
   dm     = dnm * 1852.
-  nx     = int(math.ceil(2*180*60/dnm))
-  ny     = int(math.ceil(2*90*60/dnm))
+  # nx     = int(math.ceil(2*180*60/dnm))
+  # ny     = int(math.ceil(2*90*60/dnm))
   dx     = (extent[1] - extent[0])/nx
   dy     = (extent[3] - extent[2])/ny
   masknpy = os.path.join (mask, 'mask_%.2f_nm.npy' % dnm)

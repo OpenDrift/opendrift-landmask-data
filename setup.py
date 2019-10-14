@@ -20,15 +20,16 @@ class BuildPyCommand(BuildPy):
   def generate_mask(self):
     from opendrift_landmask_data.mask import GSHHSMask
 
-    if not os.path.exists(GSHHSMask.masktif):
-      if not os.path.exists (os.path.dirname(GSHHSMask.masktif)):
-        os.makedirs (os.path.dirname(GSHHSMask.masktif))
-      from opendrift_landmask_data.rasterize import gshhs_rasterize
+    if not os.path.exists(GSHHSMask.maskmm):
+      if not os.path.exists (os.path.dirname(GSHHSMask.maskmm)):
+        os.makedirs (os.path.dirname(GSHHSMask.maskmm))
+      from opendrift_landmask_data.rasterize import gshhs_rasterize, mask_rasterize
       from opendrift_landmask_data.gshhs import GSHHS
 
-      print ("generating tif raster at %.2f m resolution (this might take a couple of minutes).." % GSHHSMask.dm)
+      print ("generating raster at %.2f m resolution (this might take a couple of minutes).." % GSHHSMask.dm)
 
-      gshhs_rasterize(GSHHS['f'], 'opendrift_landmask_data/masks/mask_%.2f_nm.tif' % GSHHSMask.dnm)
+      # gshhs_rasterize(GSHHS['f'], 'opendrift_landmask_data/masks/mask_%.2f_nm.tif' % GSHHSMask.dnm)
+      mask_rasterize(GSHHS['f'], 'opendrift_landmask_data/masks/mask_%.2f_nm.mm' % GSHHSMask.dnm)
 
   def run(self):
     self.unpack()
@@ -36,13 +37,13 @@ class BuildPyCommand(BuildPy):
     setuptools.command.build_py.build_py.run(self)
 
 setuptools.setup (name = 'opendrift_landmask_data',
-       version = '0.1rc5',
+       version = '0.1rc6',
        description = 'Joined landmasks for GSHHS features used by cartopy',
        author = 'Gaute Hope',
        author_email = 'gaute.hope@met.no',
        url = 'http://github.com/OpenDrift/opendrift-landmask-data',
        packages = setuptools.find_packages(exclude = ['*.compressed']),
-       package_data = { '': [ 'shapes/*.wkb', 'masks/*.tif' ] },
+       package_data = { '': [ 'shapes/*.wkb', 'masks/*.mm' ] },
        include_package_data = False,
        setup_requires = [ 'setuptools_scm',
                           'rasterio >= 1.0',

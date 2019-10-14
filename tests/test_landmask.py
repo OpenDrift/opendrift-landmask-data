@@ -74,7 +74,7 @@ def test_landmask_many_extent(benchmark):
   benchmark(l.contains, xx.ravel(), yy.ravel())
 
 def test_norway(tmpdir):
-  l = Landmask(extent=[0, 45, 40, 67])
+  l = Landmask(extent=[-1, 44, 41, 68])
 
   lon = np.arange (0, 40, .1)
   lat = np.arange (45, 67, .1)
@@ -94,5 +94,41 @@ def test_norway(tmpdir):
   ax.imshow(c, extent = [ 0, 40, 45, 67], transform=ccrs.PlateCarree())
   ax.coastlines()
   ax.set_global()
-  plt.savefig(os.path.join(tmpdir, 'norway.png'))
-  # plt.show()
+  # plt.savefig(os.path.join(tmpdir, 'norway.png'))
+  plt.show()
+
+def test_tromsoe(tmpdir):
+  # xmin, ymin, xmax, ymax
+  extent=[18.64, 69.537, 19.37, 69.91]
+  l = Landmask(extent)
+
+  lon = np.arange (18.8, 18.969, .0003)
+  lat = np.arange (69.59, 69.70, .0003)
+
+  xx, yy = np.meshgrid(lon, lat)
+  c = l.contains(xx.ravel(), yy.ravel(), True)
+  c = c.reshape(xx.shape)
+
+  print ("c:", c)
+
+  import cartopy
+  import cartopy.crs as ccrs
+  import matplotlib.pyplot as plt
+  import os
+  plt.figure(dpi=200)
+  ax = plt.axes(projection = ccrs.PlateCarree())
+  # ax.contourf(lon, lat, c, transform = ccrs.PlateCarree())
+  ax.imshow(c, extent = [ np.min(lon), np.max(lon), np.min(lat), np.max(lat)], transform=ccrs.PlateCarree())
+
+  reader = cartopy.feature.GSHHSFeature('f') \
+           .intersecting_geometries([
+             extent[0],
+             extent[2],
+             extent[1],
+             extent[3]])
+  ax.add_geometries(list(reader), ccrs.PlateCarree(), alpha = .5)
+
+  ax.coastlines()
+  # ax.set_global()
+  # plt.savefig(os.path.join(tmpdir, 'norway.png'))
+  plt.show()
