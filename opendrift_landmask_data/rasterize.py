@@ -57,7 +57,7 @@ def gshhs_rasterize(inwkb, outtif):
 def mask_rasterize(inwkb, outnp):
     dnm = GSHHSMask.dnm
     nx = GSHHSMask.nx
-    ny = GSHHSMask.nx
+    ny = GSHHSMask.ny
     x = [-180, 180]
     y = [-90, 90]
 
@@ -69,25 +69,28 @@ def mask_rasterize(inwkb, outnp):
     # transform = rasterio.transform.IDENTITY
     print ("transform = ", transform)
 
+    img = np.memmap(outnp, dtype = 'bool', mode = 'w+', shape = (ny,nx))
     with open(inwkb, 'rb') as fd:
         land = wkb.load(fd)
 
         # check out features.geometry_mask -> np.bool
-        img = geometry_mask (
+        img[:] = geometry_mask (
                 land,
                 invert = True,
                 out_shape = (ny, nx),
                 all_touched = True,
                 transform = transform)
 
-    np.save (outnp, img, allow_pickle=False)
+    img.flush()
+    print ("img shape:", img.shape)
+
     return img
 
 
 if __name__ == '__main__':
     print ("resolution, m =", GSHHSMask.dm)
-    # img = mask_rasterize(GSHHS['c'], 'masks/mask_%.2f_nm' % GSHHSMask.dnm)
-    img = gshhs_rasterize (GSHHS['f'], 'masks/mask_%.2f_nm.tif' % GSHHSMask.dnm)
+    img = mask_rasterize(GSHHS['f'], 'masks/mask_%.2f_nm.mm' % GSHHSMask.dnm)
+    # img = gshhs_rasterize (GSHHS['f'], 'masks/mask_%.2f_nm.tif' % GSHHSMask.dnm)
 
     # print ("plotting.. (won't work at high res)")
     # import cartopy.crs as ccrs

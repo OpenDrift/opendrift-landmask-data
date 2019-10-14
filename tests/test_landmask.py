@@ -30,11 +30,25 @@ def test_landmask_onland(benchmark):
   c = benchmark(l.contains, onland[0], onland[1])
   assert c
 
+def test_landmask_onland_skippoly(benchmark):
+  l = Landmask()
+
+  onland = (np.array([15.]), np.array([65.6]))
+  c = benchmark(l.contains, onland[0], onland[1], True)
+  assert c
+
 def test_landmask_onocean(benchmark):
   l = Landmask()
 
   onocean = (np.array([5.]), np.array([65.6]))
   c = benchmark(l.contains, onocean[0], onocean[1])
+  assert not c
+
+def test_landmask_onocean_skippoly(benchmark):
+  l = Landmask()
+
+  onocean = (np.array([5.]), np.array([65.6]))
+  c = benchmark(l.contains, onocean[0], onocean[1], True)
   assert not c
 
 def test_landmask_many(benchmark):
@@ -49,7 +63,7 @@ def test_landmask_many(benchmark):
   benchmark(l.contains, xx.ravel(), yy.ravel())
 
 def test_landmask_many_extent(benchmark):
-  l = Landmask([50, 0, 52, 10])
+  l = Landmask([50, 0, 65, 40])
 
   x = np.linspace(50.1, 64.9, 30000)
   y = np.linspace(0.1, 39.9, 10)

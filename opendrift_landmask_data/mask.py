@@ -18,6 +18,8 @@ class GSHHSMask:
   dx     = (extent[1] - extent[0])/nx
   dy     = (extent[3] - extent[2])/ny
   masknpy = os.path.join (mask, 'mask_%.2f_nm.npy' % dnm)
+  masknpz = os.path.join (mask, 'mask_%.2f_nm.npz' % dnm)
+  maskmm  = os.path.join (mask, 'mask_%.2f_nm.mm' % dnm)
   masktif = os.path.join (mask, 'mask_%.2f_nm.tif' % dnm)
 
   def grid(self):
