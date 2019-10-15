@@ -6,15 +6,15 @@ import shapely.wkb as wkb
 
 if __name__ == '__main__':
     from gshhs import GSHHS
-    from mask import GSHHSMask
+    from mask import Landmask
 else:
     from .gshhs import GSHHS
-    from .mask import GSHHSMask
+    from .mask import Landmask
 
 def gshhs_rasterize(inwkb, outtif):
-    dnm = GSHHSMask.dnm
-    nx = GSHHSMask.nx
-    ny = GSHHSMask.ny
+    dnm = Landmask.dnm
+    nx = Landmask.nx
+    ny = Landmask.ny
     x = [-180, 180]
     y = [-90, 90]
 
@@ -22,7 +22,7 @@ def gshhs_rasterize(inwkb, outtif):
 
     resx = (x[1] - x[0]) / nx
     resy = (y[1] - y[0]) / ny
-    transform = Affine.translation(x[0] - resx/2, y[0]-resy/2) * Affine.scale (resx, resy)
+    transform = Landmask.get_transform()
     print ("transform = ", transform)
 
     with open(inwkb, 'rb') as fd:
@@ -56,9 +56,9 @@ def gshhs_rasterize(inwkb, outtif):
 
 
 def mask_rasterize(inwkb, outnp):
-    dnm = GSHHSMask.dnm
-    nx = GSHHSMask.nx
-    ny = GSHHSMask.ny
+    dnm = Landmask.dnm
+    nx = Landmask.nx
+    ny = Landmask.ny
     x = [-180, 180]
     y = [-90, 90]
 
@@ -66,7 +66,7 @@ def mask_rasterize(inwkb, outnp):
 
     resx = (x[1] - x[0]) / nx
     resy = (y[1] - y[0]) / ny
-    transform = Affine.translation(x[0] - resx/2, y[0]-resy/2) * Affine.scale(resx, resy)
+    transform = Landmask.get_transform()
     print ("transform = ", transform)
 
     img = np.memmap(outnp, dtype = 'bool', mode = 'w+', shape = (ny,nx))
@@ -87,9 +87,9 @@ def mask_rasterize(inwkb, outnp):
 
 
 if __name__ == '__main__':
-    print ("resolution, m =", GSHHSMask.dm)
-    # img = mask_rasterize(GSHHS['f'], 'masks/mask_%.2f_nm.mm' % GSHHSMask.dnm)
-    img = gshhs_rasterize (GSHHS['f'], 'masks/mask_%.2f_nm.tif' % GSHHSMask.dnm)
+    print ("resolution, m =", Landmask.dm)
+    # img = mask_rasterize(GSHHS['f'], 'masks/mask_%.2f_nm.mm' % Landmask.dnm)
+    img = gshhs_rasterize (GSHHS['f'], 'masks/mask_%.2f_nm.tif' % Landmask.dnm)
 
     # print ("plotting.. (won't work at high res)")
     # import cartopy.crs as ccrs
@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     # plt.figure ()
     # ax = plt.axes(projection=ccrs.PlateCarree())
-    # img = plt.imread('masks/mask_%.2f_nm.tif' % GSHHSMask.dnm)
+    # img = plt.imread('masks/mask_%.2f_nm.tif' % Landmask.dnm)
     # print (img.shape)
     # # extent = [-180, 180, -90, 90]
     # # ax.imshow (img, extent = extent, transform = ccrs.PlateCarree())

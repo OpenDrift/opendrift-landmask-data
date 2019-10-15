@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from opendrift_landmask_data.contains import Landmask
+from opendrift_landmask_data import Landmask
 
 def test_setup_landmask(benchmark):
   l = benchmark(Landmask)
@@ -94,8 +94,8 @@ def test_norway(tmpdir):
   ax.imshow(c, extent = [ 0, 40, 45, 67], transform=ccrs.PlateCarree())
   ax.coastlines()
   ax.set_global()
-  # plt.savefig(os.path.join(tmpdir, 'norway.png'))
-  plt.show()
+  plt.savefig(os.path.join(tmpdir, 'norway.png'))
+  # plt.show()
 
 def test_tromsoe(tmpdir):
   # xmin, ymin, xmax, ymax
@@ -130,5 +130,5 @@ def test_tromsoe(tmpdir):
 
   ax.coastlines()
   # ax.set_global()
-  # plt.savefig(os.path.join(tmpdir, 'norway.png'))
-  plt.show()
+  plt.savefig(os.path.join(tmpdir, 'tromsoe.png'))
+  # plt.show()
