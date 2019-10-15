@@ -36,9 +36,9 @@ class Landmask:
     from rasterio import Affine
     x = [-180, 180]
     y = [-90, 90]
-    resx = (x[1] - x[0]) / Landmask.nx
-    resy = (y[1] - y[0]) / Landmask.ny
-    return Affine.translation(x[0] - resx/2, y[0]-resy/2) * Affine.scale (resx, resy)
+    resx = float(x[1] - x[0]) / Landmask.nx
+    resy = float(y[1] - y[0]) / Landmask.ny
+    return Affine.translation(x[0] - resx/2, y[0]-resy/2) * Affine.scale(resx, resy)
 
   def __init__(self, extent = None):
     """

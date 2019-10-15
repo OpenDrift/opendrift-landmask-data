@@ -20,8 +20,8 @@ def gshhs_rasterize(inwkb, outtif):
 
     print ('nx =', nx, 'ny =', ny)
 
-    resx = (x[1] - x[0]) / nx
-    resy = (y[1] - y[0]) / ny
+    resx = float(x[1] - x[0]) / nx
+    resy = float(y[1] - y[0]) / ny
     transform = Landmask.get_transform()
     print ("transform = ", transform)
 
@@ -64,8 +64,8 @@ def mask_rasterize(inwkb, outnp):
 
     print ('nx =', nx, 'ny =', ny)
 
-    resx = (x[1] - x[0]) / nx
-    resy = (y[1] - y[0]) / ny
+    resx = float(x[1] - x[0]) / nx
+    resy = float(y[1] - y[0]) / ny
     transform = Landmask.get_transform()
     print ("transform = ", transform)
 
