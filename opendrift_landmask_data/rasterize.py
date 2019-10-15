@@ -33,6 +33,7 @@ def gshhs_rasterize(inwkb, outtif):
                         height = ny,
                         width  = nx,
                         count  = 1,
+                        compress = 'packbits', # packbits are fast to read
                         dtype  = 'uint8',
                         tiled  = True,
                         blockxsize = 512,
@@ -87,8 +88,8 @@ def mask_rasterize(inwkb, outnp):
 
 if __name__ == '__main__':
     print ("resolution, m =", GSHHSMask.dm)
-    img = mask_rasterize(GSHHS['f'], 'masks/mask_%.2f_nm.mm' % GSHHSMask.dnm)
-    # img = gshhs_rasterize (GSHHS['f'], 'masks/mask_%.2f_nm.tif' % GSHHSMask.dnm)
+    # img = mask_rasterize(GSHHS['f'], 'masks/mask_%.2f_nm.mm' % GSHHSMask.dnm)
+    img = gshhs_rasterize (GSHHS['f'], 'masks/mask_%.2f_nm.tif' % GSHHSMask.dnm)
 
     # print ("plotting.. (won't work at high res)")
     # import cartopy.crs as ccrs

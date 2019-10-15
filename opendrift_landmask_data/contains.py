@@ -4,6 +4,9 @@ import shapely.vectorized
 import shapely.wkb as wkb
 from shapely.geometry import box, MultiPolygon
 import rasterio
+import tempfile
+import os
+import os.path
 
 from .mask import GSHHSMask
 from .gshhs import GSHHS
@@ -23,12 +26,22 @@ class Landmask:
       extent (array): [xmin, ymin, xmax, ymax]
     """
     self.extent = extent
-    self.mask = np.memmap(GSHHSMask.maskmm, dtype = 'bool', mode = 'r', shape = (GSHHSMask.ny, GSHHSMask.nx))
     self.transform = GSHHSMask().transform.__invert__()
 
-    # Use TIF
-    # with rasterio.open(GSHHSMask.masktif, 'r') as src:
-    #   self.mask = src.read(1)
+    tmpdir = os.path.join (tempfile.gettempdir(), 'landmask')
+    if not os.path.exists(tmpdir): os.makedirs (tmpdir)
+
+    mmapf = os.path.join(tmpdir, 'mask.dat')
+    if not os.path.exists (mmapf):
+      print ("generating memmap landmask from tif..")
+      self.mask  = np.memmap (mmapf, dtype = 'uint8', mode = 'w+', shape = (GSHHSMask.ny, GSHHSMask.nx))
+
+      with rasterio.open(GSHHSMask.masktif, 'r') as src:
+        src.read(1, out = self.mask)
+
+      del self.mask
+
+    self.mask  = np.memmap (mmapf, dtype = 'uint8', mode = 'r', shape = (GSHHSMask.ny, GSHHSMask.nx))
 
     with open(GSHHS['f'], 'rb') as fd:
       self.land = wkb.load(fd)
@@ -74,7 +87,7 @@ class Landmask:
 
     xm, ym = self.transform * (x, y)
 
-    land = self.mask[ym.astype(np.int32), xm.astype(np.int32)]
+    land = self.mask[ym.astype(np.int32), xm.astype(np.int32)] == 1
 
     # checking against polygons
     if not skippoly and len(x[land]) > 0:
