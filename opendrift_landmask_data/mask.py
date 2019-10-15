@@ -104,16 +104,19 @@ class Landmask:
       array of bools same length as x and y
     """
     if not isinstance(x, np.ndarray):
-      x = np.array(x, ndmin = 1)
+      x = np.array(x, ndmin = 1, dtype = np.float32)
 
     if not isinstance(y, np.ndarray):
-      y = np.array(y, ndmin = 1)
+      y = np.array(y, ndmin = 1, dtype = np.float32)
 
     xm, ym = self.invtransform * (x, y)
-    xm = np.clip(xm, 0, self.nx-1)
-    ym = np.clip(ym, 0, self.ny-1)
 
-    land = self.mask[ym.astype(np.int32), xm.astype(np.int32)] == 1
+    xm = xm.astype(np.int32)
+    ym = ym.astype(np.int32)
+    xm[xm==self.nx] = self.nx-1
+    ym[ym==self.ny] = self.ny-1
+
+    land = self.mask[ym, xm] == 1
 
     # checking against polygons
     if not skippoly and len(x[land]) > 0:
