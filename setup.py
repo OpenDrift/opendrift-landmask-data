@@ -12,7 +12,7 @@ class BuildPyCommand(BuildPy):
 
       print ("decompressing 'full' resolution coastline..")
 
-      with bz2.open('opendrift_landmask_data/shapes/compressed/gshhs_f_-180.000000E-90.000000N180.000000E90.000000N.wkb.bz2', 'r') as cf:
+      with bz2.BZ2File('opendrift_landmask_data/shapes/compressed/gshhs_f_-180.000000E-90.000000N180.000000E90.000000N.wkb.bz2', 'r') as cf:
 
         with open('opendrift_landmask_data/shapes/gshhs_f_-180.000000E-90.000000N180.000000E90.000000N.wkb', 'wb') as uf:
           shutil.copyfileobj(cf, uf)
