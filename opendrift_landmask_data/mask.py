@@ -9,27 +9,16 @@ class GSHHSMask:
 
   ## minimum resolution:
   ## 0.269978 nm = .5 km, 1 deg <= 60 nm (at equator)
-  # dnm    = 0.269978 # nm
-  # dnm    = .26
-  # dnm    = 30.
   nx = 2*180*60*4
   ny = 2*90*60*4
   dnm = 1/4
   dm     = dnm * 1852.
-  # nx     = int(math.ceil(2*180*60/dnm))
-  # ny     = int(math.ceil(2*90*60/dnm))
   dx     = (extent[1] - extent[0])/nx
   dy     = (extent[3] - extent[2])/ny
-  masknpy = os.path.join (mask, 'mask_%.2f_nm.npy' % dnm)
-  masknpz = os.path.join (mask, 'mask_%.2f_nm.npz' % dnm)
   maskmm  = os.path.join (mask, 'mask_%.2f_nm.mm' % dnm)
   masktif = os.path.join (mask, 'mask_%.2f_nm.tif' % dnm)
 
-  def grid(self):
-    import numpy as np
-    x = np.arange(self.extent[0], self.extent[1], self.dx)
-    y = np.arange(self.extent[2], self.extent[3], self.dy)
-
+  @property
   def transform(self):
     from rasterio import Affine
     x = [-180, 180]

@@ -65,21 +65,19 @@ def mask_rasterize(inwkb, outnp):
 
     resx = (x[1] - x[0]) / nx
     resy = (y[1] - y[0]) / ny
-    transform = Affine.translation(x[0] - resx/2, y[0]-resy/2) * Affine.scale (resx, resy)
-    # transform = rasterio.transform.IDENTITY
+    transform = Affine.translation(x[0] - resx/2, y[0]-resy/2) * Affine.scale(resx, resy)
     print ("transform = ", transform)
 
     img = np.memmap(outnp, dtype = 'bool', mode = 'w+', shape = (ny,nx))
     with open(inwkb, 'rb') as fd:
         land = wkb.load(fd)
 
-        # check out features.geometry_mask -> np.bool
-        img[:] = geometry_mask (
-                land,
-                invert = True,
-                out_shape = (ny, nx),
-                all_touched = True,
-                transform = transform)
+        img[:] = geometry_mask(
+                    land,
+                    invert = True,
+                    out_shape = (ny, nx),
+                    all_touched = True,
+                    transform = transform)
 
     img.flush()
     print ("img shape:", img.shape)
