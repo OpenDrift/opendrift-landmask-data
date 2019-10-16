@@ -17,12 +17,12 @@ class Landmask:
 
   ## minimum resolution:
   ## 0.269978 nm = .5 km, 1 deg <= 60 nm (at equator)
-  nx = 2*180*60*4
-  ny = 2*90*60*4
+  nx  = 2*180*60*4
+  ny  = 2*90*60*4
   dnm = 1./4.
-  dm     = dnm * 1852.
-  dx     = (extent[1] - extent[0])/nx
-  dy     = (extent[3] - extent[2])/ny
+  dm  = dnm * 1852.
+  dx  = (extent[1] - extent[0])/nx
+  dy  = (extent[3] - extent[2])/ny
   maskmm  = os.path.join (mask, 'mask_%.2f_nm.mm' % dnm)
   masktif = os.path.join (mask, 'mask_%.2f_nm.tif' % dnm)
 
