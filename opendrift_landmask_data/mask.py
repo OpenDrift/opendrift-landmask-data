@@ -26,6 +26,7 @@ class Landmask:
   maskmm  = os.path.join (mask, 'mask_%.2f_nm.mm' % dnm)
   masktif = os.path.join (mask, 'mask_%.2f_nm.tif' % dnm)
 
+  polys = None
   land = None
   mask = None
   transform = None
@@ -78,6 +79,7 @@ class Landmask:
       # polygons
       self.land = MultiPolygon([l for l in self.land.geoms if self.extent.intersects(l)])
 
+    self.polys = self.land
     self.land = shapely.prepared.prep(self.land)
 
     # warmup
