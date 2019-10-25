@@ -41,17 +41,19 @@ class Landmask:
     resy = float(y[1] - y[0]) / Landmask.ny
     return Affine.translation(x[0] - resx/2, y[0]-resy/2) * Affine.scale(resx, resy)
 
-  def __init__(self, extent = None):
+  def __init__(self, extent = None, skippoly = False):
     """
     Initialize landmask from generated GeoTIFF
 
     Args:
 
       extent (array): [xmin, ymin, xmax, ymax]
+      skippoly (bool): do not load polygons
     """
     self.extent = extent
     self.transform = self.get_transform()
     self.invtransform = self.transform.__invert__()
+    self.skippoly = skippoly
 
     tmpdir = os.path.join (tempfile.gettempdir(), 'landmask')
     if not os.path.exists(tmpdir): os.makedirs (tmpdir)
@@ -68,27 +70,21 @@ class Landmask:
 
     self.mask  = np.memmap (mmapf, dtype = 'uint8', mode = 'r', shape = (self.ny, self.nx))
 
-    with open(GSHHS['f'], 'rb') as fd:
-      self.land = wkb.load(fd)
+    if not skippoly:
+      with open(GSHHS['f'], 'rb') as fd:
+        self.land = wkb.load(fd)
 
-    if extent:
-      self.extent = box(*extent)
-      rep_point = self.extent.representative_point()
-      self.extent = shapely.prepared.prep(self.extent)
+      if extent:
+        self.extent = box(*extent)
+        self.extent = shapely.prepared.prep(self.extent)
 
-      # polygons
-      self.land = MultiPolygon([l for l in self.land.geoms if self.extent.intersects(l)])
+        # polygons
+        self.land = MultiPolygon([l for l in self.land.geoms if self.extent.intersects(l)])
 
-    self.polys = self.land
-    self.land = shapely.prepared.prep(self.land)
+      self.polys = self.land
+      self.land = shapely.prepared.prep(self.land)
 
-    # warmup
-    if extent:
-      self.contains(rep_point.x, rep_point.y)
-    else:
-      self.contains(0, 0)
-
-  def contains(self, x, y, skippoly = False, checkextent = True):
+  def contains(self, x, y, skippoly = None, checkextent = True):
     """
     Check if coordinates x, y are on land
 
@@ -97,7 +93,7 @@ class Landmask:
 
       y (scalar or array, deg): latitude
 
-      skippoly (bool): skip check against polygons, default False
+      skippoly (bool): skip check against polygons, default False unless constructed with True.
 
       checkextent (bool): check if points are within extent of landmask, default True
 
@@ -105,6 +101,11 @@ class Landmask:
 
       array of bools same length as x and y
     """
+    if skippoly is not None:
+      assert not (not skippoly and self.skippoly), "cannot check against polygons when not constructed with polygons"
+    else:
+      skippoly = self.skippoly
+
     if not isinstance(x, np.ndarray):
       x = np.array(x, ndmin = 1, dtype = np.float32)
 
