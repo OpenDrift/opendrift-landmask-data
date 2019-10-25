@@ -21,8 +21,8 @@ class Landmask:
   ny  = 2*90*60*4
   dnm = 1./4.
   dm  = dnm * 1852.
-  dx  = (extent[1] - extent[0])/nx
-  dy  = (extent[3] - extent[2])/ny
+  dx  = float(extent[1] - extent[0]) / nx
+  dy  = float(extent[3] - extent[2]) / ny
   maskmm  = os.path.join (mask, 'mask_%.2f_nm.mm' % dnm)
   masktif = os.path.join (mask, 'mask_%.2f_nm.tif' % dnm)
 
