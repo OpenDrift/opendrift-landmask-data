@@ -32,7 +32,7 @@ class Landmask:
   @staticmethod
   def get_mask():
     from pkg_resources import resource_stream
-    masktif = os.path.join ('masks', 'mask_%.2f_nm.tif' % dnm)
+    masktif = os.path.join ('masks', 'mask_%.2f_nm.tif' % Landmask.dnm)
     return resource_stream (__name__, masktif)
 
   @staticmethod
