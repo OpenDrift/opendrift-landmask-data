@@ -8,8 +8,7 @@ import tempfile
 import os
 import os.path
 
-from .gshhs import GSHHS
-mask = os.path.join(os.path.dirname(__file__), 'masks') + os.path.sep
+from .gshhs import get_gshhs_f
 
 class Landmask:
   extent = [-180, 180, -90, 90]
@@ -23,14 +22,18 @@ class Landmask:
   dm  = dnm * 1852.
   dx  = float(extent[1] - extent[0]) / nx
   dy  = float(extent[3] - extent[2]) / ny
-  maskmm  = os.path.join (mask, 'mask_%.2f_nm.mm' % dnm)
-  masktif = os.path.join (mask, 'mask_%.2f_nm.tif' % dnm)
 
   polys = None
   land = None
   mask = None
   transform = None
   invtransform = None
+
+  @staticmethod
+  def get_mask():
+    from pkg_resources import resource_stream
+    masktif = os.path.join ('masks', 'mask_%.2f_nm.tif' % dnm)
+    return resource_stream (__name__, masktif)
 
   @staticmethod
   def get_transform():
@@ -63,7 +66,7 @@ class Landmask:
       print ("generating memmap landmask from tif..")
       self.mask  = np.memmap (mmapf, dtype = 'uint8', mode = 'w+', shape = (self.ny, self.nx))
 
-      with rasterio.open(self.masktif, 'r') as src:
+      with rasterio.open(self.get_mask(), 'r') as src:
         src.read(1, out = self.mask)
 
       del self.mask
@@ -71,7 +74,7 @@ class Landmask:
     self.mask  = np.memmap (mmapf, dtype = 'uint8', mode = 'r', shape = (self.ny, self.nx))
 
     if not skippoly:
-      with open(GSHHS['f'], 'rb') as fd:
+      with get_gshhs_f() as fd:
         self.land = wkb.load(fd)
 
       if extent:
