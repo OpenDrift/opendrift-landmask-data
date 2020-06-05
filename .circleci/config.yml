@@ -3,6 +3,7 @@ jobs:
   build:
     docker:
       - image: continuumio/miniconda3
+    resource_class: large
     steps:
       - checkout
       - run:
@@ -27,6 +28,6 @@ jobs:
           command: source activate opendrift && python setup.py build
       - run:
           name: Running tests
-          command: source activate opendrift && pytest --cov=opendrift_landmask_data -vv --durations 10
+          command: source activate opendrift && pytest --cov=opendrift_landmask_data -vv -s --log-cli-level=info --durations 10
           no_output_timeout: 40m
 

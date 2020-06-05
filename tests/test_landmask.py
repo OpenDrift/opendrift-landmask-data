@@ -27,8 +27,8 @@ def test_concurrent_threads_landmask_generation():
     print("instance", i, "done")
 
   from concurrent.futures import ThreadPoolExecutor, wait
-  with ThreadPoolExecutor(max_workers = 10) as exe:
-    futures = [ exe.submit(f, i) for i in range(40) ]
+  with ThreadPoolExecutor(max_workers = 4) as exe:
+    futures = [ exe.submit(f, i) for i in range(5) ]
     wait(futures)
 
 def _f(i):
@@ -40,8 +40,8 @@ def test_concurrent_processes_landmask_generation():
   delete_mask()
 
   from multiprocessing import Pool
-  with Pool(processes = 10) as pool:
-    pool.map(_f, range(40))
+  with Pool(processes = 4) as pool:
+    pool.map(_f, range(5))
 
 def test_setup_landmask_pregenerated(benchmark):
   delete_mask()
