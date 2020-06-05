@@ -1,0 +1,32 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: continuumio/miniconda3
+    steps:
+      - checkout
+      - run:
+          name: Update packages
+          command: apt-get update
+
+      - restore_cache:
+          key: v1-deps1-{{ checksum "environment.yml" }}
+      - run:
+          name: Install requirements
+          command: |
+            if [ ! -e /opt/conda/envs/opendrift ]; then
+              conda env create --file environment.yml
+              source activate opendrift
+            fi
+      - save_cache:
+          key: v1-deps1-{{ checksum "environment.yml" }}
+          paths:
+            - "/opt/conda/envs"
+      - run:
+          name: Building
+          command: source activate opendrift && python setup.py build
+      - run:
+          name: Running tests
+          command: source activate opendrift && pytest --cov=opendrift_landmask_data -vv --durations 10
+          no_output_timeout: 40m
+

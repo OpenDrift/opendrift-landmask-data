@@ -1,0 +1,17 @@
+name: opendrift
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.7
+  - numpy
+  - pyproj>=2.3
+  - pytest
+  - pytest-cov
+  - pytest-benchmark
+  - cartopy
+  - rasterio
+  - setuptools
+  - setuptools_scm
+  - shapely
+
+
