@@ -1,12 +1,63 @@
 import pytest
 import numpy as np
+import os
+import tempfile
 
 from opendrift_landmask_data import Landmask
 
-def test_setup_landmask(benchmark):
+tmpdir = os.path.join (tempfile.gettempdir(), 'landmask')
+mmapf = os.path.join(tmpdir, 'mask.dat')
+
+def delete_mask():
+  if os.path.exists(mmapf):
+    os.unlink(mmapf)
+
+def test_generate_landmask():
+  delete_mask()
+  l = Landmask()
+
+  assert os.path.exists(mmapf)
+
+def test_concurrent_threads_landmask_generation():
+  delete_mask()
+
+  def f(i):
+    print("launching instance:", i)
+    l = Landmask(__concurreny_delay__ = 2.)
+    print("instance", i, "done")
+
+  from concurrent.futures import ThreadPoolExecutor, wait
+  with ThreadPoolExecutor(max_workers = 10) as exe:
+    futures = [ exe.submit(f, i) for i in range(40) ]
+    wait(futures)
+
+def _f(i):
+  print("launching instance:", i)
+  l = Landmask(__concurreny_delay__ = 2.)
+  print("instance", i, "done")
+
+def test_concurrent_processes_landmask_generation():
+  delete_mask()
+
+  from multiprocessing import Pool
+  with Pool(processes = 10) as pool:
+    pool.map(_f, range(40))
+
+def test_setup_landmask_pregenerated(benchmark):
+  delete_mask()
+  l = Landmask()
+
   l = benchmark(Landmask)
 
+def test_setup_landmask_generate(benchmark):
+  def f():
+    delete_mask()
+    return Landmask()
+
+  l = benchmark(f)
+
 def test_landmask_contains():
+  delete_mask()
   l = Landmask()
 
   onland = (np.array([15.]), np.array([65.6]))
@@ -24,6 +75,7 @@ def test_landmask_contains():
   l.contains([-180], [-90])
 
 def test_landmask_onland(benchmark):
+  delete_mask()
   l = Landmask()
 
   onland = (np.array([15.]), np.array([65.6]))
@@ -31,6 +83,7 @@ def test_landmask_onland(benchmark):
   assert c
 
 def test_landmask_onland_skippoly(benchmark):
+  delete_mask()
   l = Landmask()
 
   onland = (np.array([15.]), np.array([65.6]))
@@ -38,6 +91,7 @@ def test_landmask_onland_skippoly(benchmark):
   assert c
 
 def test_landmask_onocean(benchmark):
+  delete_mask()
   l = Landmask()
 
   onocean = (np.array([5.]), np.array([65.6]))
@@ -45,6 +99,7 @@ def test_landmask_onocean(benchmark):
   assert not c
 
 def test_landmask_onocean_skippoly(benchmark):
+  delete_mask()
   l = Landmask()
 
   onocean = (np.array([5.]), np.array([65.6]))
@@ -52,6 +107,7 @@ def test_landmask_onocean_skippoly(benchmark):
   assert not c
 
 def test_landmask_many(benchmark):
+  delete_mask()
   l = Landmask()
 
   x = np.arange(-180, 180, .5)
@@ -63,6 +119,7 @@ def test_landmask_many(benchmark):
   benchmark(l.contains, xx.ravel(), yy.ravel())
 
 def test_landmask_many_extent(benchmark):
+  delete_mask()
   l = Landmask([50, 0, 65, 40])
 
   x = np.linspace(50.1, 64.9, 30000)
@@ -74,6 +131,7 @@ def test_landmask_many_extent(benchmark):
   benchmark(l.contains, xx.ravel(), yy.ravel())
 
 def test_norway(tmpdir):
+  delete_mask()
   l = Landmask(extent=[-1, 44, 41, 68])
 
   lon = np.arange (0, 40, .1)
@@ -98,6 +156,8 @@ def test_norway(tmpdir):
   # plt.show()
 
 def test_tromsoe(tmpdir):
+  delete_mask()
+
   # xmin, ymin, xmax, ymax
   extent=[18.64, 69.537, 19.37, 69.91]
   l = Landmask(extent)
