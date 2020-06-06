@@ -5,10 +5,10 @@ from rasterio import Affine
 import shapely.wkb as wkb
 
 if __name__ == '__main__':
-    from gshhs import GSHHS
+    from gshhs import get_gshhs_f
     from mask import Landmask
 else:
-    from .gshhs import GSHHS
+    from .gshhs import get_gshhs_f
     from .mask import Landmask
 
 def gshhs_rasterize(inwkb, outtif):
@@ -25,33 +25,32 @@ def gshhs_rasterize(inwkb, outtif):
     transform = Landmask.get_transform()
     print ("transform = ", transform)
 
-    with open(inwkb, 'rb') as fd:
-        land = wkb.load(fd)
-
-        with rasterio.open(outtif, 'w+',
-                        driver = 'GTiff',
-                        height = ny,
-                        width  = nx,
-                        count  = 1,
-                        compress = 'packbits', # packbits are fast to read
-                        dtype  = 'uint8',
-                        tiled  = True,
-                        blockxsize = 512,
-                        blockysize = 512,
-                        nbits = 1,
-                        crs = 'epsg:32662', # Plate Carree
-                        transform = transform) as out:
+    land = wkb.load(inwkb)
+    with rasterio.open(outtif, 'w+',
+                    driver = 'GTiff',
+                    height = ny,
+                    width  = nx,
+                    count  = 1,
+                    compress = 'packbits', # packbits are fast to read
+                    dtype  = 'uint8',
+                    tiled  = True,
+                    blockxsize = 512,
+                    blockysize = 512,
+                    nbits = 1,
+                    crs = 'epsg:32662', # Plate Carree
+                    transform = transform) as out:
 
 
-            img = rasterize (
-                    ((l, 255) for l in land),
-                    out_shape = out.shape,
-                    # fill = 255,
-                    all_touched = True,
-                    transform = transform)
+        img = rasterize (
+                ((l, 255) for l in land),
+                out_shape = out.shape,
+                # fill = 255,
+                all_touched = True,
+                transform = transform)
 
-            print('writing %s..' % outtif)
-            out.write (img, indexes = 1)
+        print('writing %s..' % outtif)
+        out.write (img, indexes = 1)
+
     return img
 
 
@@ -70,15 +69,14 @@ def mask_rasterize(inwkb, outnp):
     print ("transform = ", transform)
 
     img = np.memmap(outnp, dtype = 'bool', mode = 'w+', shape = (ny,nx))
-    with open(inwkb, 'rb') as fd:
-        land = wkb.load(fd)
+    land = wkb.load(inwkb)
 
-        img[:] = geometry_mask(
-                    land,
-                    invert = True,
-                    out_shape = (ny, nx),
-                    all_touched = True,
-                    transform = transform)
+    img[:] = geometry_mask(
+                land,
+                invert = True,
+                out_shape = (ny, nx),
+                all_touched = True,
+                transform = transform)
 
     img.flush()
     print ("img shape:", img.shape)
@@ -88,8 +86,8 @@ def mask_rasterize(inwkb, outnp):
 
 if __name__ == '__main__':
     print ("resolution, m =", Landmask.dm)
-    # img = mask_rasterize(GSHHS['f'], 'masks/mask_%.2f_nm.mm' % Landmask.dnm)
-    img = gshhs_rasterize (GSHHS['f'], 'masks/mask_%.2f_nm.tif' % Landmask.dnm)
+    img = mask_rasterize(get_gshhs_f(), 'masks/mask_%.2f_nm.mm' % Landmask.dnm)
+    # img = gshhs_rasterize (get_gshhs_f(), 'masks/mask_%.2f_nm.tif' % Landmask.dnm)
 
     # print ("plotting.. (won't work at high res)")
     # import cartopy.crs as ccrs

@@ -31,14 +31,13 @@ setuptools.setup (name = 'opendrift_landmask_data',
        package_data = { '': [ 'shapes/*.wkb', 'masks/*.tif' ] },
        include_package_data = False,
        setup_requires = [ 'setuptools_scm',
-                          'rasterio >= 1.0',
                           'shapely[vectorized]',
                           'numpy'
                         ],
        extra_require = {
-         'contains': [ 'rasterio >= 1.0',
-                       'shapely[vectorized]',
-                       'numpy' ]
+         'contains': [ 'shapely[vectorized]',
+                       'numpy',
+                       'affine' ]
                        },
        cmdclass = { 'build_py': BuildPyCommand }
        )

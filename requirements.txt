@@ -4,6 +4,6 @@ setuptools
 setuptools_scm
 wheel
 twine
-rasterio
 shapely[vectorized]
+affine
 

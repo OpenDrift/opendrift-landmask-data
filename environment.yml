@@ -9,9 +9,8 @@ dependencies:
   - pytest-cov
   - pytest-benchmark
   - cartopy
-  - rasterio
   - setuptools
   - setuptools_scm
   - shapely
-
+  - affine
 

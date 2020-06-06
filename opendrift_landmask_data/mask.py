@@ -3,14 +3,12 @@ import shapely
 import shapely.vectorized
 import shapely.wkb as wkb
 from shapely.geometry import box, MultiPolygon
-import rasterio
+import affine
 import tempfile
 import os
 import os.path
 import logging
 import threading
-
-from .gshhs import get_gshhs_f
 
 class Landmask:
   extent = [-180, 180, -90, 90]
@@ -41,17 +39,21 @@ class Landmask:
   @staticmethod
   def get_mask():
     from pkg_resources import resource_stream
-    masktif = os.path.join ('masks', 'mask_%.2f_nm.tif' % Landmask.dnm)
+    masktif = os.path.join ('masks', 'mask_%.2f_nm.mm.xz' % Landmask.dnm)
     return resource_stream (__name__, masktif)
 
   @staticmethod
   def get_transform():
-    from rasterio import Affine
+    from affine import Affine
     x = [-180, 180]
     y = [-90, 90]
     resx = float(x[1] - x[0]) / Landmask.nx
     resy = float(y[1] - y[0]) / Landmask.ny
     return Affine.translation(x[0] - resx/2, y[0]-resy/2) * Affine.scale(resx, resy)
+
+  @staticmethod
+  def get_inverse_transform():
+    return ~Landmask.get_transform()
 
   def __32_bit__(self):
     import sys
@@ -65,16 +67,13 @@ class Landmask:
       raise Exception("numpy memory mapped file cannot exceed 2GB on 32 bit system")
 
     if not self.__mask_exists__():
-      logging.info("generating memmap landmask from tif to %s.." % self.mmapf)
+      logging.info("decompressiong memmap landmask to %s.." % self.mmapf)
 
       with tempfile.NamedTemporaryFile(dir = self.tmpdir, delete = False) as fd:
         try:
-          mask = np.memmap(fd, dtype = 'uint8', mode = 'w+', shape = (self.ny, self.nx))
-          with rasterio.open(self.get_mask(), 'r') as src:
-            src.read(1, out = mask)
-
-          mask.flush()
-          del mask
+          import lzma, shutil
+          with lzma.open(self.get_mask(), 'rb') as zmask:
+            shutil.copyfileobj(zmask, fd)
 
           if self.__concurreny_delay__ > 0:
             logging.warn("concurrency tesing, sleeping: %.2fs" % self.__concurreny_delay__)
@@ -145,7 +144,7 @@ class Landmask:
     """
     self.extent = extent
     self.transform = self.get_transform()
-    self.invtransform = self.transform.__invert__()
+    self.invtransform = self.get_inverse_transform()
     self.skippoly = skippoly
     self.__concurreny_delay__ = __concurreny_delay__
 
@@ -155,6 +154,7 @@ class Landmask:
     self.__open_mask__()
 
     if not skippoly:
+      from .gshhs import get_gshhs_f
       with get_gshhs_f() as fd:
         self.land = wkb.load(fd)
 
@@ -203,7 +203,7 @@ class Landmask:
     xm[xm==self.nx] = self.nx-1
     ym[ym==self.ny] = self.ny-1
 
-    land = self.mask[ym, xm] == 1
+    land = self.mask[ym, xm] == True
 
     # checking against polygons
     if not skippoly and len(x[land]) > 0:
