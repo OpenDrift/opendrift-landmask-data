@@ -35,6 +35,7 @@ class Landmask:
   mmapf = os.path.join(tmpdir, 'mask.dat')
   lockf = os.path.join(tmpdir, '.mask.dat.lock')
 
+  __concurreny_delay__ = 0
   generation_lock = threading.Lock()
 
   @staticmethod
@@ -75,7 +76,7 @@ class Landmask:
           mask.flush()
           del mask
 
-          if self.__concurreny_delay__:
+          if self.__concurreny_delay__ > 0:
             logging.warn("concurrency tesing, sleeping: %.2fs" % self.__concurreny_delay__)
             import time
             time.sleep(self.__concurreny_delay__)
@@ -122,7 +123,7 @@ class Landmask:
         self.generation_lock.release()
 
     else:
-      logging.info("landmask is being generated in another thread, waiting for it to complete..")
+      logging.warn("landmask is being generated in another thread, waiting for it to complete..")
       self.generation_lock.acquire(True)
       self.generation_lock.release()
       logging.info("landmask generation done in another thread, attempting to load..")
