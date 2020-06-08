@@ -34,7 +34,7 @@ def test_concurrent_threads_landmask_generation():
 
 def _f(i):
   print("launching instance:", i)
-  l = Landmask(__concurreny_delay__ = 2.)
+  l = Landmask(__concurrency_delay__ = 2.)
   print("instance", i, "done")
 
 def test_concurrent_processes_landmask_generation():
@@ -43,6 +43,32 @@ def test_concurrent_processes_landmask_generation():
   from multiprocessing import Pool
   with Pool(processes = 4) as pool:
     pool.map(_f, range(5))
+
+def _f2(i, abort):
+  print("launching instance:", i)
+  if abort:
+    try:
+      l = Landmask(__concurrency_delay__ = 2., __concurrency_abort__ = abort)
+    except:
+      pass
+  else:
+    l = Landmask(__concurrency_delay__ = 2., __concurrency_abort__ = abort)
+  print("instance", i, "done")
+
+def test_concurrent_process_abort_generation():
+  delete_mask()
+
+  from multiprocessing import Pool
+  import time
+  with Pool(processes = 2) as pool:
+    r1 = pool.apply_async(_f2, (0, True))
+    time.sleep(1)
+    r2 = pool.apply_async(_f2, (1, False))
+
+    r1.get(None)
+    r2.get(None)
+
+  assert os.path.exists(mmapf)
 
 def test_setup_landmask_pregenerated(benchmark):
   delete_mask()

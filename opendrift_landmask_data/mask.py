@@ -33,7 +33,8 @@ class Landmask:
   mmapf = os.path.join(tmpdir, 'mask.dat')
   lockf = os.path.join(tmpdir, '.mask.dat.lock')
 
-  __concurreny_delay__ = 0
+  __concurrency_delay__ = 0
+  __concurrency_abort__ = False
   generation_lock = threading.Lock()
 
   @staticmethod
@@ -75,15 +76,20 @@ class Landmask:
           with lzma.open(self.get_mask(), 'rb') as zmask:
             shutil.copyfileobj(zmask, fd)
 
-          if self.__concurreny_delay__ > 0:
-            logging.warn("concurrency tesing, sleeping: %.2fs" % self.__concurreny_delay__)
+          if self.__concurrency_delay__ > 0:
+            logging.warn("concurrency testing: sleeping: %.2fs" % self.__concurrency_delay__)
             import time
-            time.sleep(self.__concurreny_delay__)
+            time.sleep(self.__concurrency_delay__)
 
-          os.rename(fd.name, self.mmapf)
-          logging.info("landmask generated")
+          if self.__concurrency_abort__:
+            logging.error("concurrency testing: landmask aborted (planned)")
+            os.unlink(fd.name)
+          else:
+            os.rename(fd.name, self.mmapf)
+            logging.info("landmask generated")
 
         except:
+          logging.exception("failed to generate landmask")
           os.unlink(fd.name)
           raise
 
@@ -101,7 +107,6 @@ class Landmask:
           try:
             logging.info("locking landmask for generation..")
             fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            logging.info("got lock")
 
             # we got the lock, now generate mask
             self.__generate_impl__()
@@ -114,8 +119,15 @@ class Landmask:
 
             logging.info("landmask generation done in another process, attempting to load..")
 
+            if not self.__mask_exists__():
+              logging.warn("landmask generation failed in other process (perhaps it was killed), re-trying..")
+
+              # we already have lock
+              self.__generate_impl__()
+
+
       except ImportError:
-        logging.error("fcntl not available on this platform, concurrent generations of landmask (different threads or processes) might cause failing landmask generation. Make sure only one instance of landmask is running on system the first time.")
+        logging.error("fcntl not available on this platform, concurrent generations of landmask (different threads or processes) might cause failing landmask generation. Make sure only one instance of landmask is running on the system the first time.")
         self.__generate_impl__()
 
       finally:
@@ -131,7 +143,7 @@ class Landmask:
   def __open_mask__(self):
     self.mask = np.memmap (self.mmapf, dtype = 'uint8', mode = 'r', shape = (self.ny, self.nx))
 
-  def __init__(self, extent = None, skippoly = False, __concurreny_delay__ = 0):
+  def __init__(self, extent = None, skippoly = False, __concurrency_delay__ = 0, __concurrency_abort__ = False):
     """
     Initialize landmask from generated GeoTIFF
 
@@ -140,13 +152,15 @@ class Landmask:
       extent (array): [xmin, ymin, xmax, ymax]
       skippoly (bool): do not load polygons
 
-      __concurreny_delay__: internally used for race condition testing, do not use.
+      __concurrency_delay__: internally used for race condition testing, do not use.
+      __concurrency_abort__: internally used for race condition testing, do not use.
     """
     self.extent = extent
     self.transform = self.get_transform()
     self.invtransform = self.get_inverse_transform()
     self.skippoly = skippoly
-    self.__concurreny_delay__ = __concurreny_delay__
+    self.__concurrency_delay__ = __concurrency_delay__
+    self.__concurrency_abort__ = __concurrency_abort__
 
     if not self.__mask_exists__():
       self.__generate__()
