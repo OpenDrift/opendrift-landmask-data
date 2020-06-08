@@ -203,7 +203,7 @@ class Landmask:
     xm[xm==self.nx] = self.nx-1
     ym[ym==self.ny] = self.ny-1
 
-    land = self.mask[ym, xm] == True
+    land = self.mask[ym, xm] == 1
 
     # checking against polygons
     if not skippoly and len(x[land]) > 0:

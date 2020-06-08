@@ -68,7 +68,7 @@ def mask_rasterize(inwkb, outnp):
     transform = Landmask.get_transform()
     print ("transform = ", transform)
 
-    img = np.memmap(outnp, dtype = 'bool', mode = 'w+', shape = (ny,nx))
+    img = np.memmap(outnp, dtype = 'uint8', mode = 'w+', shape = (ny,nx))
     land = wkb.load(inwkb)
 
     img[:] = geometry_mask(
@@ -76,7 +76,7 @@ def mask_rasterize(inwkb, outnp):
                 invert = True,
                 out_shape = (ny, nx),
                 all_touched = True,
-                transform = transform)
+                transform = transform).astype('uint8')
 
     img.flush()
     print ("img shape:", img.shape)

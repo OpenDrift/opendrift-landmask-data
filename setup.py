@@ -22,7 +22,7 @@ class BuildPyCommand(BuildPy):
     setuptools.command.build_py.build_py.run(self)
 
 setuptools.setup (name = 'opendrift_landmask_data',
-       version = '0.2',
+       version = '0.3',
        description = 'Joined landmasks for GSHHS features used by cartopy',
        author = 'Gaute Hope',
        author_email = 'gaute.hope@met.no',
@@ -30,10 +30,7 @@ setuptools.setup (name = 'opendrift_landmask_data',
        packages = setuptools.find_packages(exclude = ['*.compressed']),
        package_data = { '': [ 'shapes/*.wkb', 'masks/*.tif' ] },
        include_package_data = False,
-       setup_requires = [ 'setuptools_scm',
-                          'shapely[vectorized]',
-                          'numpy'
-                        ],
+       setup_requires = [ 'setuptools_scm' ],
        extra_require = {
          'contains': [ 'shapely[vectorized]',
                        'numpy',
