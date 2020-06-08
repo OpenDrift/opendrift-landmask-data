@@ -28,7 +28,7 @@ setuptools.setup (name = 'opendrift_landmask_data',
        author_email = 'gaute.hope@met.no',
        url = 'http://github.com/OpenDrift/opendrift-landmask-data',
        packages = setuptools.find_packages(exclude = ['*.compressed']),
-       package_data = { '': [ 'shapes/*.wkb', 'masks/*.tif' ] },
+       package_data = { '': [ 'shapes/*.wkb', 'masks/*.tif', 'masks/*.xz' ] },
        include_package_data = False,
        setup_requires = [ 'setuptools_scm' ],
        extra_require = {
