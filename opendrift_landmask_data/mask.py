@@ -70,8 +70,8 @@ class Landmask:
     if not self.__mask_exists__():
       logging.info("decompressiong memmap landmask to %s.." % self.mmapf)
 
-      with tempfile.NamedTemporaryFile(dir = self.tmpdir, delete = False) as fd:
-        try:
+      try:
+        with tempfile.NamedTemporaryFile(dir = self.tmpdir, delete = False) as fd:
           import lzma, shutil
           with lzma.open(self.get_mask(), 'rb') as zmask:
             shutil.copyfileobj(zmask, fd)
@@ -81,17 +81,17 @@ class Landmask:
             import time
             time.sleep(self.__concurrency_delay__)
 
-          if self.__concurrency_abort__:
-            logging.error("concurrency testing: landmask aborted (planned)")
-            os.unlink(fd.name)
-          else:
-            os.rename(fd.name, self.mmapf)
-            logging.info("landmask generated")
-
-        except:
-          logging.exception("failed to generate landmask")
+        if self.__concurrency_abort__:
+          logging.error("concurrency testing: landmask aborted (planned)")
           os.unlink(fd.name)
-          raise
+        else:
+          os.rename(fd.name, self.mmapf)
+          logging.info("landmask generated")
+
+      except:
+        logging.exception("failed to generate landmask")
+        os.unlink(fd.name)
+        raise
 
   def __generate__(self):
     if not os.path.exists(self.tmpdir):
