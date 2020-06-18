@@ -86,6 +86,12 @@ class Landmask:
           os.unlink(fd.name)
         else:
           os.rename(fd.name, self.mmapf)
+
+          try:
+            os.chmod(self.mmapf, 0o444)
+          except:
+            logging.exception("could not set read permissions for group and others on landmask.")
+
           logging.info("landmask generated")
 
       except:
