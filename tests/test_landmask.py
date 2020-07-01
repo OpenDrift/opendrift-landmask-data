@@ -15,7 +15,7 @@ def delete_mask():
 
 def test_generate_landmask():
   delete_mask()
-  l = Landmask()
+  l = Landmask(__no_retry__ = True)
 
   assert os.path.exists(mmapf)
 
@@ -24,7 +24,7 @@ def test_concurrent_threads_landmask_generation():
 
   def f(i):
     print("launching instance:", i)
-    l = Landmask(__concurreny_delay__ = 2.)
+    l = Landmask(__concurreny_delay__ = 2., __no_retry__ = True)
     print("instance", i, "done")
 
   from concurrent.futures import ThreadPoolExecutor, wait
@@ -34,7 +34,7 @@ def test_concurrent_threads_landmask_generation():
 
 def _f(i):
   print("launching instance:", i)
-  l = Landmask(__concurrency_delay__ = 2.)
+  l = Landmask(__concurrency_delay__ = 2., __no_retry__ = True)
   print("instance", i, "done")
 
 def test_concurrent_processes_landmask_generation():
@@ -48,11 +48,11 @@ def _f2(i, abort):
   print("launching instance:", i)
   if abort:
     try:
-      l = Landmask(__concurrency_delay__ = 2., __concurrency_abort__ = abort)
+      l = Landmask(__concurrency_delay__ = 2., __concurrency_abort__ = abort, __no_retry__ = True)
     except:
       pass
   else:
-    l = Landmask(__concurrency_delay__ = 2., __concurrency_abort__ = abort)
+    l = Landmask(__concurrency_delay__ = 2., __concurrency_abort__ = abort, __no_retry__ = True)
   print("instance", i, "done")
 
 def test_concurrent_process_abort_generation():
@@ -70,16 +70,31 @@ def test_concurrent_process_abort_generation():
 
   assert os.path.exists(mmapf)
 
+def test_setup_landmask_retry():
+  delete_mask()
+  import stat
+  os.makedirs(tmpdir, exist_ok = True)
+  m = os.stat(tmpdir).st_mode
+  try:
+    os.chmod(tmpdir, 0o000)
+    l = Landmask()
+  finally:
+    os.chmod(tmpdir, m)
+
+def test_setup_landmask_retry_open():
+  delete_mask()
+  l = Landmask(__retry_delete__ = True)
+
 def test_setup_landmask_pregenerated(benchmark):
   delete_mask()
-  l = Landmask()
+  l = Landmask(__no_retry__ = True)
 
   l = benchmark(Landmask)
 
 def test_setup_landmask_generate(benchmark):
   def f():
     delete_mask()
-    return Landmask()
+    return Landmask(__no_retry__ = True)
 
   l = benchmark(f)
 

@@ -30,11 +30,15 @@ class Landmask:
   invtransform = None
 
   tmpdir = os.path.join (tempfile.gettempdir(), 'landmask')
+  DEFAULT_MMAPF = os.path.join(tmpdir, 'mask.dat')
   mmapf = os.path.join(tmpdir, 'mask.dat')
   lockf = os.path.join(tmpdir, '.mask.dat.lock')
 
+  tmpmask = None
+
   __concurrency_delay__ = 0
   __concurrency_abort__ = False
+  __no_retry__ = False
   generation_lock = threading.Lock()
 
   @staticmethod
@@ -63,41 +67,69 @@ class Landmask:
   def __mask_exists__(self):
     return os.path.exists(self.mmapf)
 
-  def __generate_impl__(self):
+  def __check_permissions__(self):
+    if self.__mask_exists__():
+      try:
+        if not os.stat(self.mmapf).st_mode & 0o444 == 0o444:
+          logging.warning("permissions too restrictive on landmask, trying to relax.")
+          os.chmod(self.mmapf, 0o444)
+
+        if not os.stat(self.lockf).st_mode & 0o777 == 0o777:
+          logging.warning("permissions too restrictive on landmask lock file, trying to relax.")
+          os.chmod(self.lockf, 0o777)
+
+      except:
+        logging.exception("could not verify read permissions for group and others on landmask.")
+
+  def __generate_impl__(self, temporary = False):
     if self.__32_bit__():
       raise Exception("numpy memory mapped file cannot exceed 2GB on 32 bit system")
 
-    if not self.__mask_exists__():
-      logging.info("decompressiong memmap landmask to %s.." % self.mmapf)
+    if not temporary and self.__mask_exists__():
+      logging.warning("mask already exists, aborting generation..")
+      return
 
-      try:
-        with tempfile.NamedTemporaryFile(dir = self.tmpdir, delete = False) as fd:
-          import lzma, shutil
-          with lzma.open(self.get_mask(), 'rb') as zmask:
-            shutil.copyfileobj(zmask, fd)
+    try:
+      fd = tempfile.NamedTemporaryFile(delete = temporary)
+      if temporary:
+        mask = fd.name
+        self.tmpmask = fd # keep handle around and delete on destruct
+      else:
+        mask = self.DEFAULT_MMAPF
 
-          if self.__concurrency_delay__ > 0:
-            logging.warn("concurrency testing: sleeping: %.2fs" % self.__concurrency_delay__)
-            import time
-            time.sleep(self.__concurrency_delay__)
+      logging.info("decompressing memmap landmask to %s.." % mask)
 
-        if self.__concurrency_abort__:
-          logging.error("concurrency testing: landmask aborted (planned)")
-          os.unlink(fd.name)
-        else:
-          os.rename(fd.name, self.mmapf)
+      import lzma, shutil
+      with lzma.open(self.get_mask(), 'rb') as zmask:
+        shutil.copyfileobj(zmask, fd)
+      fd.flush()
 
-          try:
-            os.chmod(self.mmapf, 0o444)
-          except:
-            logging.exception("could not set read permissions for group and others on landmask.")
+      if self.__concurrency_delay__ > 0:
+        logging.warn("concurrency testing: sleeping: %.2fs" % self.__concurrency_delay__)
+        import time
+        time.sleep(self.__concurrency_delay__)
 
-          logging.info("landmask generated")
-
-      except:
-        logging.exception("failed to generate landmask")
+      if self.__concurrency_abort__:
+        logging.error("concurrency testing: landmask aborted (planned)")
+        fd.close()
         os.unlink(fd.name)
-        raise
+
+      else:
+        if not temporary:
+          fd.close()
+          os.rename(fd.name, mask)
+
+        try:
+          os.chmod(mask, 0o444)
+        except:
+          logging.exception("could not set read permissions for group and others on landmask.")
+
+        self.mmapf = mask
+        logging.info("landmask generated")
+
+    except:
+      logging.exception("failed to generate landmask")
+      raise
 
   def __generate__(self):
     if not os.path.exists(self.tmpdir):
@@ -108,6 +140,11 @@ class Landmask:
         import fcntl
 
         with open(self.lockf, 'w') as fd:
+          try:
+            os.chmod(self.lockf, 0o777)
+          except:
+            logging.warning("could not permissions for lock file.")
+
           # try to get non-blocking lock, if fail, another process is presumably generating the
           # landmask. so we wait.
           try:
@@ -136,6 +173,14 @@ class Landmask:
         logging.error("fcntl not available on this platform, concurrent generations of landmask (different threads or processes) might cause failing landmask generation. Make sure only one instance of landmask is running on the system the first time.")
         self.__generate_impl__()
 
+      except:
+        logging.exception("failed to generate landmask: re-trying to create landmask in temporary location.")
+        if not self.__no_retry__:
+          self.__generate_impl__(True)
+        else:
+          logging.error("retry disabled for testing.")
+          raise
+
       finally:
         self.generation_lock.release()
 
@@ -147,9 +192,21 @@ class Landmask:
 
 
   def __open_mask__(self):
-    self.mask = np.memmap (self.mmapf, dtype = 'uint8', mode = 'r', shape = (self.ny, self.nx))
+    if self.__retry_delete__:
+      logging.warning("testing: deleting generated mmapf before opening")
+      os.unlink(self.mmapf)
 
-  def __init__(self, extent = None, skippoly = False, __concurrency_delay__ = 0, __concurrency_abort__ = False):
+    try:
+      self.mask = np.memmap (self.mmapf, dtype = 'uint8', mode = 'r', shape = (self.ny, self.nx))
+    except:
+      logging.error("could not open landmask, re-trying to generate to temporary location.")
+      if not self.__no_retry__:
+        self.__generate_impl__(True)
+        self.mask = np.memmap (self.mmapf, dtype = 'uint8', mode = 'r', shape = (self.ny, self.nx))
+      else:
+        raise
+
+  def __init__(self, extent = None, skippoly = False, __concurrency_delay__ = 0, __concurrency_abort__ = False, __no_retry__ = False, __retry_delete__ = False):
     """
     Initialize landmask from generated GeoTIFF
 
@@ -160,6 +217,8 @@ class Landmask:
 
       __concurrency_delay__: internally used for race condition testing, do not use.
       __concurrency_abort__: internally used for race condition testing, do not use.
+      __no_retry__: internally used for mask generation testing, do not use.
+      __retry_delete__: internally used for mask generation testing, do not use.
     """
     self.extent = extent
     self.transform = self.get_transform()
@@ -167,6 +226,10 @@ class Landmask:
     self.skippoly = skippoly
     self.__concurrency_delay__ = __concurrency_delay__
     self.__concurrency_abort__ = __concurrency_abort__
+    self.__no_retry__ = __no_retry__
+    self.__retry_delete__ = __retry_delete__
+
+    self.__check_permissions__()
 
     if not self.__mask_exists__():
       self.__generate__()
