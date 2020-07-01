@@ -22,7 +22,7 @@ class BuildPyCommand(BuildPy):
     setuptools.command.build_py.build_py.run(self)
 
 setuptools.setup (name = 'opendrift_landmask_data',
-       version = '0.5',
+       version = '0.6',
        description = 'Joined landmasks for GSHHS features used by cartopy',
        author = 'Gaute Hope',
        author_email = 'gaute.hope@met.no',
