@@ -74,7 +74,7 @@ class Landmask:
           logging.warning("permissions too restrictive on landmask, trying to relax.")
           os.chmod(self.mmapf, 0o444)
 
-        if not os.stat(self.lockf).st_mode & 0o777 == 0o777:
+        if os.path.exists(self.lockf) and not os.stat(self.lockf).st_mode & 0o777 == 0o777:
           logging.warning("permissions too restrictive on landmask lock file, trying to relax.")
           os.chmod(self.lockf, 0o777)
 
