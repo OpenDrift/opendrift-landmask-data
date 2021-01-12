@@ -7,7 +7,7 @@ import affine
 import tempfile
 import os
 import os.path
-import logging
+import logging; logger = logging.getLogger(__name__)
 import threading
 
 class Landmask:
@@ -71,22 +71,22 @@ class Landmask:
     if self.__mask_exists__():
       try:
         if not os.stat(self.mmapf).st_mode & 0o444 == 0o444:
-          logging.warning("permissions too restrictive on landmask, trying to relax.")
+          logger.warning("permissions too restrictive on landmask, trying to relax.")
           os.chmod(self.mmapf, 0o444)
 
         if os.path.exists(self.lockf) and not os.stat(self.lockf).st_mode & 0o777 == 0o777:
-          logging.warning("permissions too restrictive on landmask lock file, trying to relax.")
+          logger.warning("permissions too restrictive on landmask lock file, trying to relax.")
           os.chmod(self.lockf, 0o777)
 
       except:
-        logging.exception("could not verify read permissions for group and others on landmask.")
+        logger.exception("could not verify read permissions for group and others on landmask.")
 
   def __generate_impl__(self, temporary = False):
     if self.__32_bit__():
       raise Exception("numpy memory mapped file cannot exceed 2GB on 32 bit system")
 
     if not temporary and self.__mask_exists__():
-      logging.warning("mask already exists, aborting generation..")
+      logger.warning("mask already exists, aborting generation..")
       return
 
     try:
@@ -97,7 +97,7 @@ class Landmask:
       else:
         mask = self.DEFAULT_MMAPF
 
-      logging.info("decompressing memmap landmask to %s.." % mask)
+      logger.info("decompressing memmap landmask to %s.." % mask)
 
       import lzma, shutil
       with lzma.open(self.get_mask(), 'rb') as zmask:
@@ -105,12 +105,12 @@ class Landmask:
       fd.flush()
 
       if self.__concurrency_delay__ > 0:
-        logging.warn("concurrency testing: sleeping: %.2fs" % self.__concurrency_delay__)
+        logger.warn("concurrency testing: sleeping: %.2fs" % self.__concurrency_delay__)
         import time
         time.sleep(self.__concurrency_delay__)
 
       if self.__concurrency_abort__:
-        logging.error("concurrency testing: landmask aborted (planned)")
+        logger.error("concurrency testing: landmask aborted (planned)")
         fd.close()
         os.unlink(fd.name)
 
@@ -122,13 +122,13 @@ class Landmask:
         try:
           os.chmod(mask, 0o444)
         except:
-          logging.exception("could not set read permissions for group and others on landmask.")
+          logger.exception("could not set read permissions for group and others on landmask.")
 
         self.mmapf = mask
-        logging.info("landmask generated")
+        logger.info("landmask generated")
 
     except:
-      logging.exception("failed to generate landmask")
+      logger.exception("failed to generate landmask")
       raise
 
   def __generate__(self):
@@ -143,12 +143,12 @@ class Landmask:
           try:
             os.chmod(self.lockf, 0o777)
           except:
-            logging.warning("could not permissions for lock file.")
+            logger.warning("could not permissions for lock file.")
 
           # try to get non-blocking lock, if fail, another process is presumably generating the
           # landmask. so we wait.
           try:
-            logging.info("locking landmask for generation..")
+            logger.info("locking landmask for generation..")
             fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
             # we got the lock, now generate mask
@@ -156,50 +156,50 @@ class Landmask:
 
           except OSError:
             # file already locked
-            logging.warn("landmask is being generated in another process, waiting for it to complete..")
+            logger.warn("landmask is being generated in another process, waiting for it to complete..")
 
             fcntl.lockf(fd, fcntl.LOCK_EX) # blocks
 
-            logging.info("landmask generation done in another process, attempting to load..")
+            logger.info("landmask generation done in another process, attempting to load..")
 
             if not self.__mask_exists__():
-              logging.warn("landmask generation failed in other process (perhaps it was killed), re-trying..")
+              logger.warn("landmask generation failed in other process (perhaps it was killed), re-trying..")
 
               # we already have lock
               self.__generate_impl__()
 
 
       except ImportError:
-        logging.error("fcntl not available on this platform, concurrent generations of landmask (different threads or processes) might cause failing landmask generation. Make sure only one instance of landmask is running on the system the first time.")
+        logger.error("fcntl not available on this platform, concurrent generations of landmask (different threads or processes) might cause failing landmask generation. Make sure only one instance of landmask is running on the system the first time.")
         self.__generate_impl__()
 
       except:
-        logging.exception("failed to generate landmask: re-trying to create landmask in temporary location.")
+        logger.exception("failed to generate landmask: re-trying to create landmask in temporary location.")
         if not self.__no_retry__:
           self.__generate_impl__(True)
         else:
-          logging.error("retry disabled for testing.")
+          logger.error("retry disabled for testing.")
           raise
 
       finally:
         self.generation_lock.release()
 
     else:
-      logging.warn("landmask is being generated in another thread, waiting for it to complete..")
+      logger.warn("landmask is being generated in another thread, waiting for it to complete..")
       self.generation_lock.acquire(True)
       self.generation_lock.release()
-      logging.info("landmask generation done in another thread, attempting to load..")
+      logger.info("landmask generation done in another thread, attempting to load..")
 
 
   def __open_mask__(self):
     if self.__retry_delete__:
-      logging.warning("testing: deleting generated mmapf before opening")
+      logger.warning("testing: deleting generated mmapf before opening")
       os.unlink(self.mmapf)
 
     try:
       self.mask = np.memmap (self.mmapf, dtype = 'uint8', mode = 'r', shape = (self.ny, self.nx))
     except:
-      logging.error("could not open landmask, re-trying to generate to temporary location.")
+      logger.error("could not open landmask, re-trying to generate to temporary location.")
       if not self.__no_retry__:
         self.__generate_impl__(True)
         self.mask = np.memmap (self.mmapf, dtype = 'uint8', mode = 'r', shape = (self.ny, self.nx))
