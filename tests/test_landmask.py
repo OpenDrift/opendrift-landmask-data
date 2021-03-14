@@ -1,17 +1,9 @@
 import pytest
 import numpy as np
 import os
-import tempfile
+from . import *
 
 from opendrift_landmask_data import Landmask
-
-tmpdir = os.path.join (tempfile.gettempdir(), 'landmask')
-mmapf = os.path.join(tmpdir, 'mask.dat')
-
-def delete_mask():
-  print("deleting mask:", mmapf)
-  if os.path.exists(mmapf):
-    os.unlink(mmapf)
 
 def test_generate_landmask():
   delete_mask()
@@ -72,7 +64,6 @@ def test_concurrent_process_abort_generation():
 
 def test_setup_landmask_retry():
   delete_mask()
-  import stat
   os.makedirs(tmpdir, exist_ok = True)
   m = os.stat(tmpdir).st_mode
   try:

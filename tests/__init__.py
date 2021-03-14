@@ -1,16 +1,11 @@
 import pytest
-import opendrift_landmask_data as old
-import shapely.wkb as wkb
+import tempfile
+import os
 
-@pytest.fixture
-def coarse():
-  with open(old.GSHHS['c'], 'rb') as fd:
-    land = wkb.load (fd)
-  return land
+tmpdir = os.path.join (tempfile.gettempdir(), 'landmask')
+mmapf = os.path.join(tmpdir, 'mask.dat')
 
-@pytest.fixture
-def high():
-  with open(old.GSHHS['h'], 'rb') as fd:
-    land = wkb.load (fd)
-  return land
-
+def delete_mask():
+  print("deleting mask:", mmapf)
+  if os.path.exists(mmapf):
+    os.unlink(mmapf)

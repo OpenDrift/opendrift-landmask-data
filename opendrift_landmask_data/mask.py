@@ -105,7 +105,7 @@ class Landmask:
             fd = tempfile.NamedTemporaryFile(delete=temporary)
             if temporary:
                 mask = fd.name
-                self.tmpmask = fd  # keep handle around and delete on destruct
+                Landmask.tmpmask = fd  # keep handle around and delete on destruct
             else:
                 mask = self.DEFAULT_MMAPF
 
@@ -139,7 +139,7 @@ class Landmask:
                         "could not set read permissions for group and others on landmask."
                     )
 
-                self.mmapf = mask
+                Landmask.mmapf = mask
                 logger.info("landmask generated")
 
         except:
@@ -229,6 +229,10 @@ class Landmask:
                                       mode='r',
                                       shape=(Landmask.ny, Landmask.nx))
                 Landmask.__mask__ = weakref.ref(self.mask)
+
+                # XXX: It seems that when the mask is generated in a
+                # temp-location because of failing normal generation, the
+                # weakref is not collected. At least not immediately.
                 Landmask.generation_lock.release()
             except:
                 Landmask.generation_lock.release()
