@@ -3,13 +3,13 @@ import shapely
 import shapely.vectorized
 import shapely.wkb as wkb
 from shapely.geometry import box, MultiPolygon
-import affine
 import tempfile
 import os
 import os.path
 import logging
 logger = logging.getLogger(__name__)
 import threading
+import weakref
 
 
 class Landmask:
@@ -27,7 +27,8 @@ class Landmask:
 
     polys = None
     land = None
-    mask = None
+    __mask__ = lambda: None  # class weakreffed mask
+    mask = None  # instance ref to mask
     transform = None
     invtransform = None
 
@@ -217,23 +218,23 @@ class Landmask:
                 "landmask generation done in another thread, attempting to load.."
             )
 
-    @classmethod
-    def __memmap_mask__(cls):
-        if cls.mask is None:
+    def __memmap_mask__(self):
+        self.mask = Landmask.__mask__()
+        if self.mask is None:
             try:
                 logger.debug("memmapping mask..")
-                cls.generation_lock.acquire(True)
-                cls.mask = np.memmap(cls.mmapf,
-                                        dtype='uint8',
-                                        mode='r',
-                                        shape=(cls.ny, cls.nx))
-                cls.generation_lock.release()
+                Landmask.generation_lock.acquire(True)
+                self.mask = np.memmap(Landmask.mmapf,
+                                      dtype='uint8',
+                                      mode='r',
+                                      shape=(Landmask.ny, Landmask.nx))
+                Landmask.__mask__ = weakref.ref(self.mask)
+                Landmask.generation_lock.release()
             except:
-                cls.generation_lock.release()
+                Landmask.generation_lock.release()
                 raise
         else:
             logger.debug("mask already memmapped")
-
 
     def __open_mask__(self):
         if self.__retry_delete__:
@@ -244,15 +245,13 @@ class Landmask:
             self.__memmap_mask__()
         except Exception as ex:
             logger.error(
-                    "could not open landmask, re-trying to generate to temporary location: %s" % ex
-            )
+                "could not open landmask, re-trying to generate to temporary location: %s"
+                % ex)
             if not self.__no_retry__:
                 self.__generate_impl__(True)
                 self.__memmap_mask__()
             else:
                 raise
-
-
 
     def __init__(self,
                  extent=None,

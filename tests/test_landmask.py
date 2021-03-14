@@ -19,18 +19,6 @@ def test_generate_landmask():
 
   assert os.path.exists(mmapf)
 
-def test_generate_landmask_static():
-  l = Landmask() # make sure landmask is already generated
-  assert Landmask.mask is not None
-  Landmask.mask = None
-  assert Landmask.mask is None
-  l = Landmask()
-  assert Landmask.mask is not None
-  l2 = Landmask()
-  assert l2.mask is not None
-  assert l.mask is Landmask.mask
-  assert l2.mask is Landmask.mask
-
 def test_concurrent_threads_landmask_generation():
   delete_mask()
 
