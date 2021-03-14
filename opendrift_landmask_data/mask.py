@@ -224,7 +224,7 @@ class Landmask:
             try:
                 logger.debug("memmapping mask..")
                 Landmask.generation_lock.acquire(True)
-                self.mask = np.memmap(Landmask.mmapf,
+                self.mask = np.memmap(self.mmapf,
                                       dtype='uint8',
                                       mode='r',
                                       shape=(Landmask.ny, Landmask.nx))

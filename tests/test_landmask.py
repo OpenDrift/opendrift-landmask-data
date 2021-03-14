@@ -76,6 +76,7 @@ def test_setup_landmask_retry():
   os.makedirs(tmpdir, exist_ok = True)
   m = os.stat(tmpdir).st_mode
   try:
+    print("setting permissions on tmpdir to 0o000:", tmpdir)
     os.chmod(tmpdir, 0o000)
     l = Landmask()
   finally:
