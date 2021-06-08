@@ -42,6 +42,7 @@ class Landmask:
     __concurrency_delay__ = 0
     __concurrency_abort__ = False
     __no_retry__ = False
+    __fake_32_bit__ = False
     generation_lock = threading.Lock()
 
     @staticmethod
@@ -66,7 +67,7 @@ class Landmask:
 
     def __32_bit__(self):
         import sys
-        return sys.maxsize <= 2**32
+        return sys.maxsize <= 2**32 or self.__fake_32_bit__
 
     def __mask_exists__(self):
         return os.path.exists(self.mmapf)
@@ -93,10 +94,6 @@ class Landmask:
                 )
 
     def __generate_impl__(self, temporary=False):
-        if self.__32_bit__():
-            raise Exception(
-                "numpy memory mapped file cannot exceed 2GB on 32 bit system")
-
         if not temporary and self.__mask_exists__():
             logger.warning("mask already exists, aborting generation..")
             return
@@ -224,10 +221,19 @@ class Landmask:
             try:
                 logger.debug("memmapping mask..")
                 Landmask.generation_lock.acquire(True)
-                self.mask = np.memmap(self.mmapf,
-                                      dtype='uint8',
-                                      mode='r',
-                                      shape=(Landmask.ny, Landmask.nx))
+                if not self.__32_bit__():
+                    self.mask = np.memmap(self.mmapf,
+                                        dtype='uint8',
+                                        mode='r',
+                                        shape=(Landmask.ny, Landmask.nx))
+                else:
+                    logger.warning("cannot memorymap mask on 32-bit system, loading into memory..")
+                    with open(self.mmapf, 'rb') as fd:
+                        logger.debug('reading into buffer..')
+                        buffer = fd.read()
+                        logger.debug('constructing array..')
+                        self.mask = np.ndarray.__new__(np.ndarray, buffer=buffer, dtype='uint8', shape=(Landmask.ny, Landmask.nx))
+
                 Landmask.__mask__ = weakref.ref(self.mask)
 
                 # XXX: It seems that when the mask is generated in a
