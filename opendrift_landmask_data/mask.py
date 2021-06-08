@@ -223,16 +223,22 @@ class Landmask:
                 Landmask.generation_lock.acquire(True)
                 if not self.__32_bit__():
                     self.mask = np.memmap(self.mmapf,
-                                        dtype='uint8',
-                                        mode='r',
-                                        shape=(Landmask.ny, Landmask.nx))
+                                          dtype='uint8',
+                                          mode='r',
+                                          shape=(Landmask.ny, Landmask.nx))
                 else:
-                    logger.warning("cannot memorymap mask on 32-bit system, loading into memory..")
+                    logger.warning(
+                        "cannot memorymap mask on 32-bit system, loading into memory.."
+                    )
                     with open(self.mmapf, 'rb') as fd:
                         logger.debug('reading into buffer..')
                         buffer = fd.read()
                         logger.debug('constructing array..')
-                        self.mask = np.ndarray.__new__(np.ndarray, buffer=buffer, dtype='uint8', shape=(Landmask.ny, Landmask.nx))
+                        self.mask = np.ndarray.__new__(np.ndarray,
+                                                       buffer=buffer,
+                                                       dtype='uint8',
+                                                       shape=(Landmask.ny,
+                                                              Landmask.nx))
 
                 Landmask.__mask__ = weakref.ref(self.mask)
 
