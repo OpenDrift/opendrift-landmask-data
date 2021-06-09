@@ -275,7 +275,8 @@ class Landmask:
                  __concurrency_delay__=0,
                  __concurrency_abort__=False,
                  __no_retry__=False,
-                 __retry_delete__=False):
+                 __retry_delete__=False,
+                 __fake_32_bit__=False):
         """
         Initialize landmask from generated GeoTIFF
 
@@ -288,6 +289,7 @@ class Landmask:
           __concurrency_abort__: internally used for race condition testing, do not use.
           __no_retry__: internally used for mask generation testing, do not use.
           __retry_delete__: internally used for mask generation testing, do not use.
+          __fake_32_bit__: internally used for mask generation testing, do not use.
         """
         self.extent = extent
         self.transform = self.get_transform()
@@ -297,6 +299,7 @@ class Landmask:
         self.__concurrency_abort__ = __concurrency_abort__
         self.__no_retry__ = __no_retry__
         self.__retry_delete__ = __retry_delete__
+        self.__fake_32_bit__ = __fake_32_bit__
 
         self.__check_permissions__()
 

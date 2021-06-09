@@ -5,11 +5,8 @@ import numpy as np
 
 
 def test_load_32bit():
-    Landmask.__fake_32_bit__ = True
-
-    l = Landmask()
+    l = Landmask(__fake_32_bit__=True)
     assert l.__32_bit__() == True
-    Landmask.__fake_32_bit__ = False
 
     onland = (np.array([15.]), np.array([65.6]))
     assert l.contains(onland[0], onland[1])
