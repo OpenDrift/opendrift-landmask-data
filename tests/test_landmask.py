@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 import os
 from . import *
+import shapely
 
 from opendrift_landmask_data import Landmask
 
@@ -109,7 +110,6 @@ def test_landmask_contains():
   l.contains([-180], [-90])
 
 def test_landmask_onland(benchmark):
-  delete_mask()
   l = Landmask()
 
   onland = (np.array([15.]), np.array([65.6]))
@@ -117,15 +117,20 @@ def test_landmask_onland(benchmark):
   assert c
 
 def test_landmask_onland_skippoly(benchmark):
-  delete_mask()
   l = Landmask()
 
   onland = (np.array([15.]), np.array([65.6]))
   c = benchmark(l.contains, onland[0], onland[1], True)
   assert c
 
+def test_landmask_onland_shapes(benchmark):
+  l = Landmask()
+
+  onland = (np.array([15.]), np.array([65.6]))
+  c = benchmark(shapely.vectorized.contains, l.land, onland[0], onland[1])
+  assert c
+
 def test_landmask_onocean(benchmark):
-  delete_mask()
   l = Landmask()
 
   onocean = (np.array([5.]), np.array([65.6]))
@@ -133,7 +138,6 @@ def test_landmask_onocean(benchmark):
   assert not c
 
 def test_landmask_onocean_skippoly(benchmark):
-  delete_mask()
   l = Landmask()
 
   onocean = (np.array([5.]), np.array([65.6]))
@@ -141,7 +145,6 @@ def test_landmask_onocean_skippoly(benchmark):
   assert not c
 
 def test_landmask_many(benchmark):
-  delete_mask()
   l = Landmask()
 
   x = np.arange(-180, 180, .5)
@@ -151,6 +154,17 @@ def test_landmask_many(benchmark):
 
   print ("points:", len(xx.ravel()))
   benchmark(l.contains, xx.ravel(), yy.ravel())
+
+def test_landmask_many_skippoly(benchmark):
+  l = Landmask()
+
+  x = np.arange(-180, 180, .5)
+  y = np.arange(-90, 90, .5)
+
+  xx, yy = np.meshgrid(x,y)
+
+  print ("points:", len(xx.ravel()))
+  benchmark(l.contains, xx.ravel(), yy.ravel(), True)
 
 def test_landmask_many_extent(benchmark):
   delete_mask()
